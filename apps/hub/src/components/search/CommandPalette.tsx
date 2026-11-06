@@ -41,8 +41,10 @@ export function CommandPalette({
   return (
     <dialog
       ref={dialog}
-      onCancel={onClose}
-      onClose={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
       onClick={(e) => {
         if (e.target === dialog.current) onClose();
       }}

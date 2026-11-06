@@ -127,12 +127,16 @@ test("service identity comes from configured credentials, never the submitted ap
 });
 test("Prisma is reused for repeated production accesses", async () => {
   const previous = process.env.NODE_ENV;
+  const previousUrl = process.env.DATABASE_URL;
+  process.env.DATABASE_URL ||= "postgresql://test:test@localhost:55432/test";
   process.env.NODE_ENV = "production";
   try {
     const a = getPrisma();
     assert.equal(getPrisma(), a);
     await a.$disconnect();
   } finally {
+    if (previousUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousUrl;
     if (previous === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previous;
   }

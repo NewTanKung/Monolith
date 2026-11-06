@@ -147,6 +147,10 @@ await fetch(new URL("/api/notifications", process.env.HUB_URL), {
 
 Service identity comes from the configured credential. User-authenticated requests may notify only their own account, and their source is labeled Monolith. Notification links accept only HTTP(S) URLs or local paths. All read/update operations remain scoped to the current account.
 
+## Cloudflare Workers
+
+For Cloudflare, follow [docs/cloudflare.md](docs/cloudflare.md). Hub and Arena have separate OpenNext/Wrangler configurations, explicit build/deploy commands, a Hub service binding, and Workers-compatible PostgreSQL access. The root Wrangler command explicitly targets Hub.
+
 ## Deployment
 
 1. Create a PostgreSQL database and set production environment variables on each server.

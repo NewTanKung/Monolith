@@ -1,6 +1,8 @@
-import { PrismaClient, Role, AppCategory, AppStatus } from "@prisma/client";
+import { Role, AppCategory, AppStatus } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { createDatabaseClient } from "../src/lib/database-client";
+
+const prisma = createDatabaseClient();
 
 async function main() {
   console.log("🌱 Seeding database...");

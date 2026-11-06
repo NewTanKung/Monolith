@@ -9,10 +9,16 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:worker": "opennextjs-cloudflare build",
+    "deploy:worker": "opennextjs-cloudflare deploy",
+    "preview:worker": "opennextjs-cloudflare preview",
+    "check:worker": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
   },
   "dependencies": {
     "@monolith/auth-client": "*",
+    "@opennextjs/cloudflare": "^1.20.16",
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",

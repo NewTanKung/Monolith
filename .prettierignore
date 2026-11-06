@@ -6,3 +6,8 @@ package-lock.json
 .env.*
 test-results/
 playwright-report/
+
+.open-next/
+.wrangler/
+.dev.vars
+.dev.vars.*

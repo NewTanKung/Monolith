@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { demoUser, hubUrl } from "@/lib/session";
+import { demoUser } from "@/lib/session";
+import { hubFetch } from "@/lib/hub-fetch";
 export async function POST(req: Request) {
   try {
     const origin = req.headers.get("origin");
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     const token = process.env.MONOLITH_SERVICE_TOKEN;
     if (!token || token.length < 32)
       throw new Error("Configure MONOLITH_SERVICE_TOKEN.");
-    const response = await fetch(new URL("/api/notifications", hubUrl()), {
+    const response = await hubFetch("/api/notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -34,7 +35,6 @@ export async function POST(req: Request) {
         message: (user.name || user.email) + " secured first place. +150 LP",
         linkUrl: process.env.DEMO_URL || "http://localhost:3001",
       }),
-      signal: AbortSignal.timeout(5000),
       cache: "no-store",
     });
     if (!response.ok)
