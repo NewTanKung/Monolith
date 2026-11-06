@@ -261,3 +261,25 @@ test("registration never grants admin and deleted accounts lose access immediate
     await prisma.user.deleteMany({ where: { email: fresh } });
   }
 });
+
+test("search stays open when reopened immediately after Escape", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const search = page.getByRole("dialog", { name: "Search applications" });
+  await page.getByRole("button", { name: /Search apps|^Search$/ }).click();
+  await expect(search).toBeVisible();
+  await search
+    .getByRole("button", { name: "Close search", exact: true })
+    .click();
+  await expect(search).not.toBeVisible();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.keyboard.press("Control+k");
+    await expect(search).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Control+k");
+    await expect(search).toBeVisible();
+    await search.getByRole("button", { name: "WORK", exact: true }).click();
+    await expect(search).not.toBeVisible();
+  }
+});
