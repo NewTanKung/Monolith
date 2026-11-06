@@ -7,3 +7,9 @@ build
 *.log
 .DS_Store
 coverage
+
+*.tsbuildinfo
+.env.*
+!.env.example
+playwright-report/
+test-results/

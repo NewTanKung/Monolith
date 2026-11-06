@@ -10,10 +10,12 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
-  selection-background-color: rgba(99, 102, 241, 0.4);
+  --selection-background-color: rgba(99, 102, 241, 0.4);
 }
 
 /* iOS LiquidGlass Utilities */
@@ -22,7 +24,9 @@ body {
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
 .liquid-glass-nav {
@@ -30,7 +34,9 @@ body {
   backdrop-filter: blur(32px) saturate(190%);
   -webkit-backdrop-filter: blur(32px) saturate(190%);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
 }
 
 .liquid-card {
@@ -39,41 +45,49 @@ body {
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 10px 30px -5px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transition:
+    transform 180ms ease-out,
+    border-color 180ms ease;
 }
 
-.liquid-card:hover {
-  background: rgba(28, 34, 52, 0.65);
-  border-color: rgba(255, 255, 255, 0.22);
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
-}
+@media (hover: hover) and (pointer: fine) {
+  .liquid-card:hover {
+    background: rgba(28, 34, 52, 0.65);
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-2px);
+    box-shadow:
+      0 20px 45px -10px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+  }
 
-.liquid-pill {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
+  .liquid-pill {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
 
-.liquid-pill:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-}
+  .liquid-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
 
-.liquid-input {
-  background: rgba(14, 17, 26, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
+  .liquid-input {
+    background: rgba(14, 17, 26, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
 
-.liquid-input:focus {
-  background: rgba(18, 22, 34, 0.8);
-  border-color: rgba(99, 102, 241, 0.5);
-  outline: none;
-  box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.35);
+  .liquid-input:focus {
+    background: rgba(18, 22, 34, 0.8);
+    border-color: rgba(99, 102, 241, 0.5);
+    outline: none;
+    box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.35);
+  }
 }
 
 /* Custom Scrollbar */
@@ -93,4 +107,70 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.28);
+}
+
+html {
+  color-scheme: dark;
+}
+body {
+  min-height: 100dvh;
+}
+:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 4px;
+}
+button,
+summary,
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+}
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+.admin-input {
+  display: block;
+  width: 100%;
+  border: 1px solid #ffffff24;
+  border-radius: 12px;
+  background: #0e111a;
+  padding: 10px 12px;
+  color: #fff;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -100px;
+  z-index: 100;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: #4338ca;
+  color: #fff;
+}
+.skip-link:focus {
+  top: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .liquid-card:hover {
+    transform: none;
+  }
 }

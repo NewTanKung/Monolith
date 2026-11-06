@@ -1,176 +1,176 @@
 "use client";
-
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Layers, ArrowRight, Lock, Mail, User, AlertCircle } from "lucide-react";
-
+import { ArrowRight, Layers } from "lucide-react";
 export default function AuthPage() {
   const router = useRouter();
-  const [isRegister, setIsRegister] = useState(false);
+  const [register, setRegister] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
-    const body = isRegister ? { name, email, password } : { email, password };
-
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
     try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Authentication failed");
-      }
-
-      router.push("/");
+      const response = await fetch(
+        "/api/auth/" + (register ? "register" : "login"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            register ? { email, password, name } : { email, password },
+          ),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to sign in.");
+      router.replace("/");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Please try again.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  };
-
+  }
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      {/* Ambient background glow */}
-      <div className="absolute w-[450px] h-[450px] rounded-full bg-gradient-to-r from-indigo-600/20 to-purple-600/20 blur-[130px] pointer-events-none" />
-
-      <div className="w-full max-w-md rounded-3xl liquid-glass p-8 sm:p-10 relative z-10 border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <Link href="/" className="mb-4 group">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-liquid-glow-indigo group-hover:scale-105 transition-transform">
-              <Layers className="w-8 h-8 text-white" />
-            </div>
-          </Link>
-          <h1 className="text-2xl font-black text-white tracking-tight">Monolith Hub</h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Centralized Identity & App Launcher Portal
-          </p>
+    <main
+      id="main-content"
+      className="flex min-h-dvh items-center justify-center px-4 py-12"
+    >
+      <section className="liquid-glass w-full max-w-md rounded-3xl p-6 sm:p-9">
+        <Link
+          href="/"
+          aria-label="Monolith home"
+          className="mb-7 inline-flex rounded-2xl bg-indigo-600 p-3"
+        >
+          <Layers className="h-7 w-7" />
+        </Link>
+        <p className="text-xs font-semibold uppercase tracking-widest text-indigo-300">
+          Monolith Hub
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+          {register ? "Create your account." : "Welcome back."}
+        </h1>
+        <p className="mb-7 mt-3 text-sm leading-relaxed text-zinc-400">
+          {register
+            ? "One account for your connected workspace."
+            : "Sign in to access your apps and saved favorites."}
+        </p>
+        <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1">
+          {[false, true].map((value) => (
+            <button
+              key={String(value)}
+              disabled={busy}
+              aria-pressed={register === value}
+              onClick={() => {
+                setRegister(value);
+                setError("");
+              }}
+              className={
+                "rounded-lg py-2.5 text-sm " +
+                (register === value
+                  ? "bg-white/10 font-medium"
+                  : "text-zinc-400")
+              }
+            >
+              {value ? "Create account" : "Sign in"}
+            </button>
+          ))}
         </div>
-
-        {/* Tab Switcher: Sign In vs Register */}
-        <div className="grid grid-cols-2 p-1 rounded-xl bg-white/[0.05] border border-white/10 mb-6">
-          <button
-            type="button"
-            onClick={() => { setIsRegister(false); setError(null); }}
-            className={`py-2 rounded-lg text-xs font-semibold transition-all ${
-              !isRegister
-                ? "bg-white/20 text-white shadow-sm"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => { setIsRegister(true); setError(null); }}
-            className={`py-2 rounded-lg text-xs font-semibold transition-all ${
-              isRegister
-                ? "bg-white/20 text-white shadow-sm"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Create Account
-          </button>
-        </div>
-
-        {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <p
+            role="alert"
+            className="mb-5 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200"
+          >
+            {error}
+          </p>
         )}
-
-        {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegister && (
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <form onSubmit={submit}>
+          <fieldset disabled={busy} className="space-y-4">
+            {register && (
+              <div>
+                <label
+                  htmlFor="auth-name"
+                  className="mb-2 block text-sm text-zinc-300"
+                >
+                  Full Name
+                </label>
                 <input
-                  type="text"
+                  id="auth-name"
                   required
+                  maxLength={80}
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your Name"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl liquid-input text-white text-sm placeholder-zinc-500 focus:outline-none"
+                  className="admin-input"
                 />
               </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            )}
+            <div>
+              <label
+                htmlFor="auth-email"
+                className="mb-2 block text-sm text-zinc-300"
+              >
+                Email Address
+              </label>
               <input
+                id="auth-email"
                 type="email"
                 required
+                maxLength={254}
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@domain.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl liquid-input text-white text-sm placeholder-zinc-500 focus:outline-none"
+                className="admin-input"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div>
+              <label
+                htmlFor="auth-password"
+                className="mb-2 block text-sm text-zinc-300"
+              >
+                Password
+              </label>
               <input
+                id="auth-password"
                 type="password"
                 required
+                minLength={register ? 12 : 1}
+                maxLength={72}
+                autoComplete={register ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl liquid-input text-white text-sm placeholder-zinc-500 focus:outline-none"
+                aria-describedby={register ? "password-hint" : undefined}
+                className="admin-input"
               />
+              {register && (
+                <p id="password-hint" className="mt-2 text-xs text-zinc-400">
+                  Use at least 12 characters.
+                </p>
+              )}
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-3 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 hover:from-indigo-400 hover:to-purple-500 text-white text-sm font-semibold shadow-liquid-glow-indigo transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {loading ? "Processing..." : isRegister ? "Create Account & Sign In" : "Sign In to Ecosystem"}
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            <button
+              disabled={busy}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {busy
+                ? "Please wait…"
+                : register
+                  ? "Create Account & Sign In"
+                  : "Sign In to Ecosystem"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </fieldset>
         </form>
-
-        {/* Back to Hub link */}
-        <div className="text-center mt-6">
-          <Link
-            href="/"
-            className="text-xs text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Return to Monolith Hub
-          </Link>
-        </div>
-      </div>
-    </div>
+        <Link href="/" className="mt-7 block text-center text-xs text-zinc-400">
+          ← Return to Hub
+        </Link>
+      </section>
+    </main>
   );
 }

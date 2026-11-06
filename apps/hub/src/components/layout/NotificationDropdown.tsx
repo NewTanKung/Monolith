@@ -1,8 +1,6 @@
 "use client";
-
-import React, { useState, useRef, useEffect } from "react";
-import { Bell, CheckCheck, ExternalLink, X } from "lucide-react";
-
+import { useEffect, useRef, useState } from "react";
+import { Bell, CheckCheck, X } from "lucide-react";
 export interface NotificationItem {
   id: string;
   title: string;
@@ -12,146 +10,177 @@ export interface NotificationItem {
   isRead: boolean;
   createdAt: string | Date;
 }
-
-interface NotificationDropdownProps {
+export function NotificationDropdown({
+  initialNotifications,
+}: {
   initialNotifications: NotificationItem[];
-}
-
-export function NotificationDropdown({ initialNotifications }: NotificationDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
+}) {
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const menu = useRef<HTMLDetailsElement>(null);
+  useEffect(
+    () => setNotifications(initialNotifications),
+    [initialNotifications],
+  );
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+    const controller = new AbortController();
+    async function refresh() {
+      if (document.hidden) return;
+      try {
+        const res = await fetch("/api/notifications", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error("Unable to refresh notifications.");
+        setNotifications((await res.json()).notifications);
+        setError("");
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setError(
+            error instanceof Error ? error.message : "Please try again.",
+          );
       }
     }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+    const interval = setInterval(refresh, 30000);
+    const details = menu.current;
+    function toggle() {
+      if (details?.open) void refresh();
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
-
-  const markAllAsRead = async () => {
-    try {
-      await fetch("/api/notifications", { method: "PUT" });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    } catch (e) {
-      console.error(e);
+    function outside(e: MouseEvent) {
+      if (details && !details.contains(e.target as Node)) details.open = false;
     }
-  };
-
-  const markSingleAsRead = async (id: string) => {
+    function escape(e: KeyboardEvent) {
+      if (e.key === "Escape" && details?.open) {
+        details.open = false;
+        details.querySelector("summary")?.focus();
+      }
+    }
+    details?.addEventListener("toggle", toggle);
+    document.addEventListener("mousedown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+      details?.removeEventListener("toggle", toggle);
+      document.removeEventListener("mousedown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
+  async function markRead(id?: string) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
     try {
-      await fetch(`/api/notifications?id=${id}`, { method: "PATCH" });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      const res = await fetch(
+        "/api/notifications" + (id ? "?id=" + encodeURIComponent(id) : ""),
+        { method: id ? "PATCH" : "PUT" },
       );
-    } catch (e) {
-      console.error(e);
+      if (!res.ok) throw new Error("Unable to mark notifications as read.");
+      setNotifications((prev) =>
+        prev.map((n) => (!id || n.id === id ? { ...n, isRead: true } : n)),
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setBusy(false);
     }
-  };
-
+  }
+  const unread = notifications.filter((n) => !n.isRead).length;
   return (
-    <div className="relative" ref={menuRef}>
-      {/* Bell Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Notifications"
-        className={`relative p-2.5 rounded-full transition-all duration-200 ${
-          isOpen
-            ? "bg-white/20 text-white"
-            : "text-zinc-400 hover:text-white hover:bg-white/10"
-        }`}
+    <details ref={menu} className="relative">
+      <summary
+        className="relative cursor-pointer list-none rounded-full p-2.5 text-zinc-300"
+        aria-label={"Notifications" + (unread ? ", " + unread + " unread" : "")}
       >
-        <Bell className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-[10px] font-bold text-white shadow-md animate-pulse">
-            {unreadCount > 9 ? "9+" : unreadCount}
+        <Bell className="h-5 w-5" />
+        {unread > 0 && (
+          <span className="absolute right-0 top-0 rounded-full bg-rose-500 px-1 text-[10px] text-white">
+            {unread > 9 ? "9+" : unread}
           </span>
         )}
-      </button>
-
-      {/* Dropdown Panel */}
-      {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl liquid-glass p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium">
-                  {unreadCount} new
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  title="Mark all as read"
-                  className="text-xs text-zinc-400 hover:text-indigo-400 flex items-center gap-1 transition-colors"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  Read all
-                </button>
-              )}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {notifications.length === 0 ? (
-              <div className="py-8 text-center text-zinc-500 text-sm">
-                No notifications right now.
-              </div>
-            ) : (
-              notifications.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => !item.isRead && markSingleAsRead(item.id)}
-                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                    item.isRead
-                      ? "bg-white/[0.02] border-white/5 opacity-70 hover:opacity-100"
-                      : "bg-indigo-950/20 border-indigo-500/20 hover:bg-indigo-950/30"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-                      {item.sourceApp}
-                    </span>
-                    {!item.isRead && (
-                      <span className="w-2 h-2 rounded-full bg-pink-500"></span>
-                    )}
-                  </div>
-                  <h4 className="text-xs font-medium text-white mt-1">{item.title}</h4>
-                  <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{item.message}</p>
-                  {item.linkUrl && (
-                    <a
-                      href={item.linkUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200 mt-2 font-medium"
-                    >
-                      Open in {item.sourceApp}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
-              ))
-            )}
+      </summary>
+      <section
+        aria-label="Notifications"
+        className="fixed left-4 right-4 top-24 z-50 sm:absolute sm:left-auto sm:top-auto sm:mt-3 sm:w-96 rounded-2xl border border-white/10 bg-[#111522] p-4 shadow-2xl"
+      >
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="font-semibold">Notifications</h2>
+          <div className="flex gap-2">
+            <button
+              disabled={busy || !unread}
+              onClick={() => markRead()}
+              className="rounded-lg p-2 text-xs text-indigo-300 disabled:opacity-40"
+            >
+              <CheckCheck className="inline h-4 w-4" /> Read all
+            </button>
+            <button
+              aria-label="Close notifications"
+              className="rounded-lg p-2"
+              onClick={() => {
+                if (menu.current) menu.current.open = false;
+                menu.current?.querySelector("summary")?.focus();
+              }}
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      )}
-    </div>
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-rose-300">
+            {error}
+          </p>
+        )}
+        <div className="max-h-[60dvh] space-y-2 overflow-y-auto">
+          {!notifications.length && (
+            <p className="py-8 text-center text-sm text-zinc-400">
+              You are all caught up.
+            </p>
+          )}
+          {notifications.map((n) => (
+            <article
+              key={n.id}
+              className={
+                "rounded-xl border p-3 " +
+                (n.isRead
+                  ? "border-white/5"
+                  : "border-indigo-400/20 bg-indigo-400/5")
+              }
+            >
+              <p className="text-[10px] uppercase tracking-wider text-indigo-300">
+                {n.sourceApp}
+              </p>
+              <h3 className="mt-1 break-words text-sm font-medium">
+                {n.title}
+              </h3>
+              <p className="mt-1 break-words text-xs leading-relaxed text-zinc-400">
+                {n.message}
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                {n.linkUrl && (
+                  <a
+                    href={n.linkUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                    className="text-xs text-indigo-300"
+                  >
+                    Open app ↗
+                  </a>
+                )}
+                {!n.isRead && (
+                  <button
+                    disabled={busy}
+                    onClick={() => markRead(n.id)}
+                    className="rounded px-2 py-1 text-xs text-zinc-300 disabled:opacity-40"
+                  >
+                    Mark read
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </details>
   );
 }

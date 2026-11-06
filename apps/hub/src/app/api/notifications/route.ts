@@ -1,103 +1,116 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { apiError, assertSameOrigin, HttpError, jsonBody } from "@/lib/http";
+import { notificationSchema, parse, safeUrl } from "@/lib/validation";
+import { notificationService } from "@/lib/notification-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
-// GET: fetch notifications for current user
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ notifications: [] });
-    }
-
+    if (!user) throw new HttpError(401, "Sign in to view notifications.");
     const notifications = await prisma.notification.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 30,
     });
-
-    return NextResponse.json({ notifications });
-  } catch (err: any) {
-    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
+    return NextResponse.json(
+      {
+        notifications: notifications.map((n) => ({
+          ...n,
+          linkUrl:
+            n.linkUrl && safeUrl.safeParse(n.linkUrl).success
+              ? n.linkUrl
+              : null,
+        })),
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    return apiError(error);
   }
 }
-
-// POST: API endpoint for child apps to push notifications to a user
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, email, title, message, sourceApp, linkUrl } = body;
-
-    let targetUserId = userId;
-
-    if (!targetUserId && email) {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (user) targetUserId = user.id;
+    const service = notificationService(req);
+    if (!service) assertSameOrigin(req);
+    const currentUser = service ? null : await getCurrentUser();
+    if (!service && !currentUser)
+      throw new HttpError(401, "Authentication required.");
+    const body = parse(notificationSchema, await jsonBody(req));
+    let userId: string;
+    if (service) {
+      const target = body.userId
+        ? await prisma.user.findUnique({
+            where: { id: body.userId },
+            select: { id: true },
+          })
+        : body.email
+          ? await prisma.user.findUnique({
+              where: { email: body.email },
+              select: { id: true },
+            })
+          : null;
+      if (!target) throw new HttpError(404, "Recipient not found.");
+      userId = target.id;
+    } else {
+      if (
+        (body.userId && body.userId !== currentUser!.id) ||
+        (body.email && body.email !== currentUser!.email)
+      ) {
+        throw new HttpError(403, "You can only notify your own account.");
+      }
+      userId = currentUser!.id;
     }
-
-    if (!targetUserId) {
-      // Fallback: if user is logged in, send to self
-      const currentUser = await getCurrentUser();
-      if (currentUser) targetUserId = currentUser.id;
-    }
-
-    if (!targetUserId || !title || !message) {
-      return NextResponse.json({ error: "Missing required fields (target user, title, message)" }, { status: 400 });
-    }
-
+    await rateLimit(
+      "notification",
+      service || userId,
+      service ? 120 : 20,
+      60000,
+    );
     const notification = await prisma.notification.create({
       data: {
-        userId: targetUserId,
-        title,
-        message,
-        sourceApp: sourceApp || "Monolith App",
-        linkUrl: linkUrl || null,
-        isRead: false,
+        userId,
+        title: body.title,
+        message: body.message,
+        sourceApp: service || "Monolith",
+        linkUrl: body.linkUrl || null,
       },
     });
-
-    return NextResponse.json({ success: true, notification });
-  } catch (err: any) {
-    console.error("Create notification error:", err);
-    return NextResponse.json({ error: "Failed to push notification" }, { status: 500 });
+    return NextResponse.json({ notification }, { status: 201 });
+  } catch (error) {
+    return apiError(error);
   }
 }
-
-// PUT: Mark all as read
-export async function PUT() {
+export async function PUT(req: Request) {
   try {
+    assertSameOrigin(req);
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+    if (!user) throw new HttpError(401, "Authentication required.");
     await prisma.notification.updateMany({
       where: { userId: user.id, isRead: false },
       data: { isRead: true },
     });
-
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: "Failed to update notifications" }, { status: 500 });
+  } catch (error) {
+    return apiError(error);
   }
 }
-
-// PATCH: Mark single notification as read
 export async function PATCH(req: Request) {
   try {
+    assertSameOrigin(req);
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
-
-    await prisma.notification.updateMany({
+    if (!user) throw new HttpError(401, "Authentication required.");
+    const id = new URL(req.url).searchParams.get("id");
+    if (!id) throw new HttpError(400, "Notification ID is required.");
+    const result = await prisma.notification.updateMany({
       where: { id, userId: user.id },
       data: { isRead: true },
     });
-
+    if (!result.count) throw new HttpError(404, "Notification not found.");
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
+  } catch (error) {
+    return apiError(error);
   }
 }

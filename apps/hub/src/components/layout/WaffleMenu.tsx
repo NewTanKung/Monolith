@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Grid, ExternalLink, X } from "lucide-react";
+import { Grid, X } from "lucide-react";
 import { IconRenderer } from "../common/IconRenderer";
 
 interface AppItemData {
@@ -24,6 +24,10 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    function keys(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+    document.addEventListener("keydown", keys);
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -32,7 +36,10 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("keydown", keys);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen]);
 
   // Group apps by category
@@ -45,6 +52,7 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="App Launcher"
+        aria-expanded={isOpen}
         className={`p-2.5 rounded-full transition-all duration-200 ${
           isOpen
             ? "bg-white/20 text-white shadow-liquid-glow-indigo"
@@ -56,13 +64,16 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
 
       {/* Floating Glass Popover */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl liquid-glass p-5 z-50 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed left-4 right-4 top-24 sm:absolute sm:left-auto sm:top-auto sm:mt-3 sm:w-96 rounded-2xl liquid-glass p-5 z-50 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
             <div className="flex items-center gap-2">
               <Grid className="w-4 h-4 text-indigo-400" />
-              <span className="text-sm font-semibold tracking-wide text-white uppercase">Monolith Suite</span>
+              <span className="text-sm font-semibold tracking-wide text-white uppercase">
+                Monolith Suite
+              </span>
             </div>
             <button
+              aria-label="Close app launcher"
               onClick={() => setIsOpen(false)}
               className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5"
             >
@@ -98,7 +109,9 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
                           {app.name}
                         </span>
                         {app.status === "MAINTENANCE" && (
-                          <span className="text-[9px] text-amber-400 font-medium">Maint.</span>
+                          <span className="text-[9px] text-amber-400 font-medium">
+                            Maint.
+                          </span>
                         )}
                       </a>
                     ))}
@@ -109,7 +122,9 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/10 text-center">
-            <span className="text-[11px] text-zinc-400">All internal services unified by Monolith SSO</span>
+            <span className="text-[11px] text-zinc-400">
+              All internal services unified by Monolith SSO
+            </span>
           </div>
         </div>
       )}

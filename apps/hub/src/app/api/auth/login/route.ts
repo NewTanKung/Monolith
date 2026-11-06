@@ -1,45 +1,34 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 import { setSessionCookie } from "@/lib/session";
+import { apiError, assertSameOrigin, HttpError, jsonBody } from "@/lib/http";
+import { loginSchema, parse } from "@/lib/validation";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
-
-    if (!user || !user.passwordHash) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-    }
-
-    const hubUser = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      image: user.image,
-    };
-
-    // Issue Domain Cookie & Signed JWT
-    await setSessionCookie(hubUser);
-
-    return NextResponse.json({ success: true, user: hubUser });
-  } catch (err: any) {
-    console.error("Login error:", err);
-    return NextResponse.json({ error: "Authentication failed. Please verify your database connection." }, { status: 500 });
+    assertSameOrigin(req);
+    const { email, password } = parse(loginSchema, await jsonBody(req));
+    await rateLimit("login-traffic", "shared", 300, 60000);
+    await rateLimit("login", email);
+    const user = await prisma.user.findUnique({ where: { email } });
+    // Equal-cost password check also for unknown users.
+    const hash =
+      user?.passwordHash ||
+      "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+    const match = await bcrypt.compare(password, hash);
+    if (!user || !user.passwordHash || !match)
+      throw new HttpError(401, "Invalid email or password.");
+    const {
+      passwordHash: _hash,
+      createdAt: _created,
+      updatedAt: _updated,
+      ...profile
+    } = user;
+    await setSessionCookie(profile);
+    return NextResponse.json({ user: profile });
+  } catch (error) {
+    return apiError(error);
   }
 }

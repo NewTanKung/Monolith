@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { clearSessionCookie } from "@/lib/session";
-
-export async function POST() {
-  await clearSessionCookie();
-  return NextResponse.json({ success: true });
+import { apiError, assertSameOrigin } from "@/lib/http";
+export async function POST(req: Request) {
+  try {
+    assertSameOrigin(req);
+    await clearSessionCookie();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return apiError(error);
+  }
 }

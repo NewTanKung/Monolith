@@ -8,17 +8,46 @@
     "packages/*"
   ],
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "generate": "prisma generate --schema=apps/hub/prisma/schema.prisma",
     "build:packages": "npm run build --workspace=@monolith/auth-client",
+    "predev": "npm run generate && npm run build:packages",
+    "dev": "concurrently -k -n hub,arena \"npm run dev --workspace=@monolith/hub\" \"npm run dev --workspace=@monolith/demo-sub-app\"",
     "predev:hub": "npm run generate && npm run build:packages",
     "dev:hub": "npm run dev --workspace=@monolith/hub",
     "predev:demo": "npm run build:packages",
     "dev:demo": "npm run dev --workspace=@monolith/demo-sub-app",
     "prebuild": "npm run generate && npm run build:packages",
-    "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces"
+    "build": "npm run build --workspace=@monolith/hub && npm run build --workspace=@monolith/demo-sub-app",
+    "typecheck": "npm run generate && npm run typecheck --workspaces && tsc -p tsconfig.tools.json",
+    "lint": "eslint .",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "db:push": "node --env-file=.env node_modules/prisma/build/index.js db push --schema=apps/hub/prisma/schema.prisma",
+    "db:migrate": "node --env-file=.env node_modules/prisma/build/index.js migrate deploy --schema=apps/hub/prisma/schema.prisma",
+    "db:seed": "node --env-file=.env --import tsx apps/hub/prisma/seed.ts",
+    "admin:create": "node --env-file=.env --import tsx scripts/create-admin.ts",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^22.10.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.72.1"
+  },
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0",
+    "minimatch": "^11.0.1"
   }
 }

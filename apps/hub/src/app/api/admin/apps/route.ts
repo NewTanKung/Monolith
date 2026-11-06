@@ -1,110 +1,69 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { Role } from "@prisma/client";
+import { apiError, assertSameOrigin, HttpError, jsonBody } from "@/lib/http";
+import { appSchema, appUpdateSchema, parse } from "@/lib/validation";
 
-async function checkAdmin() {
+async function requireAdmin(req?: Request) {
+  if (req) assertSameOrigin(req);
   const user = await getCurrentUser();
-  if (!user || user.role !== Role.ADMIN) {
-    return false;
-  }
-  return true;
+  if (!user) throw new HttpError(401, "Sign in to continue.");
+  if (user.role !== "ADMIN")
+    throw new HttpError(403, "Admin privileges are required.");
 }
-
-// GET: list all apps for admin
+function handleError(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002")
+      return apiError(new HttpError(409, "This app slug already exists."));
+    if (error.code === "P2025")
+      return apiError(new HttpError(404, "Application not found."));
+  }
+  return apiError(error);
+}
 export async function GET() {
-  if (!(await checkAdmin())) {
-    return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
+  try {
+    await requireAdmin();
+    return NextResponse.json({
+      apps: await prisma.appItem.findMany({ orderBy: { orderIndex: "asc" } }),
+    });
+  } catch (error) {
+    return handleError(error);
   }
-
-  const apps = await prisma.appItem.findMany({
-    orderBy: { orderIndex: "asc" },
-  });
-
-  return NextResponse.json({ apps });
 }
-
-// POST: create new app
 export async function POST(req: Request) {
-  if (!(await checkAdmin())) {
-    return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
-  }
-
   try {
-    const data = await req.json();
-    const { name, slug, description, category, status, url, icon, color, minRole, isFeatured } = data;
-
-    if (!name || !slug || !url || !category) {
-      return NextResponse.json({ error: "Missing required app fields" }, { status: 400 });
-    }
-
-    const newApp = await prisma.appItem.create({
-      data: {
-        name,
-        slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-        description: description || "",
-        category,
-        status: status || "ONLINE",
-        url,
-        icon: icon || "LayoutGrid",
-        color: color || "from-indigo-500 to-purple-600",
-        minRole: minRole || "GUEST",
-        isFeatured: Boolean(isFeatured),
-      },
-    });
-
-    return NextResponse.json({ success: true, app: newApp });
-  } catch (err: any) {
-    console.error("Create app error:", err);
-    return NextResponse.json({ error: "Failed to create app. Slug may already exist." }, { status: 500 });
+    await requireAdmin(req);
+    const data = parse(appSchema, await jsonBody(req));
+    return NextResponse.json(
+      { app: await prisma.appItem.create({ data }) },
+      { status: 201 },
+    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-
-// PUT: update existing app
 export async function PUT(req: Request) {
-  if (!(await checkAdmin())) {
-    return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
-  }
-
   try {
-    const data = await req.json();
-    const { id, ...updateFields } = data;
-
-    if (!id) {
-      return NextResponse.json({ error: "App ID is required" }, { status: 400 });
-    }
-
-    const updatedApp = await prisma.appItem.update({
-      where: { id },
-      data: updateFields,
+    await requireAdmin(req);
+    const { id, ...data } = parse(appUpdateSchema, await jsonBody(req));
+    if (!Object.keys(data).length)
+      throw new HttpError(400, "No changes supplied.");
+    return NextResponse.json({
+      app: await prisma.appItem.update({ where: { id }, data }),
     });
-
-    return NextResponse.json({ success: true, app: updatedApp });
-  } catch (err: any) {
-    console.error("Update app error:", err);
-    return NextResponse.json({ error: "Failed to update app" }, { status: 500 });
+  } catch (error) {
+    return handleError(error);
   }
 }
-
-// DELETE: delete app
 export async function DELETE(req: Request) {
-  if (!(await checkAdmin())) {
-    return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
-  }
-
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json({ error: "App ID is required" }, { status: 400 });
-    }
-
+    await requireAdmin(req);
+    const id = new URL(req.url).searchParams.get("id");
+    if (!id) throw new HttpError(400, "App ID is required.");
     await prisma.appItem.delete({ where: { id } });
-
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("Delete app error:", err);
-    return NextResponse.json({ error: "Failed to delete app" }, { status: 500 });
+  } catch (error) {
+    return handleError(error);
   }
 }
