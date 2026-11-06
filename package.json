@@ -8,8 +8,12 @@
     "packages/*"
   ],
   "scripts": {
+    "build:packages": "npm run build --workspace=@monolith/auth-client",
+    "predev:hub": "npm run build:packages",
     "dev:hub": "npm run dev --workspace=@monolith/hub",
+    "predev:demo": "npm run build:packages",
     "dev:demo": "npm run dev --workspace=@monolith/demo-sub-app",
+    "prebuild": "npm run build:packages",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces"
   },
