@@ -3,7 +3,8 @@ import "../styles/globals.css";
 
 export const metadata: Metadata = {
   title: "Monolith Hub - Lifestyle, Work & Game Ecosystem",
-  description: "Centralized App Launcher and Portal with Seamless Single Sign-On and iOS LiquidGlass Design",
+  description:
+    "Centralized App Launcher and Portal with Seamless Single Sign-On and iOS LiquidGlass Design",
 };
 
 export default function RootLayout({
@@ -20,12 +21,17 @@ export default function RootLayout({
         <div className="fixed bottom-[-10%] left-[20%] w-[700px] h-[700px] rounded-full bg-cyan-600/8 blur-[160px] pointer-events-none -z-10" />
 
         <div className="relative z-10 flex flex-col min-h-screen">
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
           {children}
 
           <footer className="mt-auto py-8 px-4 text-center border-t border-white/5 text-xs text-zinc-500">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-zinc-300">Monolith Hub</span>
+                <span className="font-semibold text-zinc-300">
+                  Monolith Hub
+                </span>
                 <span>•</span>
                 <span>iOS LiquidGlass Platform</span>
               </div>

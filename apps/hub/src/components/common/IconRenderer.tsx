@@ -1,16 +1,41 @@
-import React from "react";
-import * as LucideIcons from "lucide-react";
-
-interface IconRendererProps {
+import {
+  Activity,
+  BarChart3,
+  Briefcase,
+  FileText,
+  Gamepad2,
+  HeartPulse,
+  Headphones,
+  KanbanSquare,
+  LayoutGrid,
+  Shield,
+  Sparkles,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react";
+const icons: Record<string, LucideIcon> = {
+  Activity,
+  BarChart3,
+  Briefcase,
+  FileText,
+  Gamepad2,
+  HeartPulse,
+  Headphones,
+  KanbanSquare,
+  LayoutGrid,
+  Shield,
+  Sparkles,
+  Trophy,
+};
+export function IconRenderer({
+  name,
+  className = "h-5 w-5",
+  size,
+}: {
   name: string;
   className?: string;
   size?: number;
-}
-
-export function IconRenderer({ name, className = "w-5 h-5", size }: IconRendererProps) {
-  // Safe dynamic lookup in lucide-react with fallback
-  const iconsMap = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; size?: number }>>;
-  const IconComponent = iconsMap[name] || LucideIcons.LayoutGrid;
-
-  return <IconComponent className={className} size={size} />;
+}) {
+  const Icon = icons[name] || LayoutGrid;
+  return <Icon className={className} size={size} aria-hidden="true" />;
 }

@@ -1,53 +1,42 @@
 import { cookies } from "next/headers";
 import {
   DEFAULT_COOKIE_NAME,
-  DEFAULT_JWT_SECRET,
   HubUser,
   signHubToken,
   verifyHubToken,
 } from "@monolith/auth-client";
+import { prisma } from "./prisma";
 
 export async function getCurrentUser(): Promise<HubUser | null> {
-  try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(DEFAULT_COOKIE_NAME);
-
-    if (!sessionCookie || !sessionCookie.value) {
-      return null;
-    }
-
-    return await verifyHubToken(sessionCookie.value, process.env.MONOLITH_JWT_SECRET || DEFAULT_JWT_SECRET);
-  } catch (err) {
-    console.error("Failed to get current user session:", err);
-    return null;
-  }
+  const token = (await cookies()).get(DEFAULT_COOKIE_NAME)?.value;
+  if (!token) return null;
+  const claims = await verifyHubToken(token);
+  if (!claims) return null;
+  // Deleted users and role changes take effect immediately in the Hub.
+  return prisma.user.findUnique({
+    where: { id: claims.id },
+    select: { id: true, email: true, name: true, role: true, image: true },
+  });
 }
-
-export async function setSessionCookie(user: HubUser): Promise<string> {
-  const token = await signHubToken(user, process.env.MONOLITH_JWT_SECRET || DEFAULT_JWT_SECRET);
-  const cookieStore = await cookies();
-  
-  const domain = process.env.SESSION_COOKIE_DOMAIN ? process.env.SESSION_COOKIE_DOMAIN.trim() : undefined;
-
-  cookieStore.set(DEFAULT_COOKIE_NAME, token, {
+function cookieOptions() {
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    domain: domain || undefined,
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-
-  return token;
+    domain: process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined,
+  };
 }
-
+export async function setSessionCookie(user: HubUser): Promise<void> {
+  const token = await signHubToken(user);
+  (await cookies()).set(DEFAULT_COOKIE_NAME, token, {
+    ...cookieOptions(),
+    maxAge: 604800,
+  });
+}
 export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  const domain = process.env.SESSION_COOKIE_DOMAIN ? process.env.SESSION_COOKIE_DOMAIN.trim() : undefined;
-
-  cookieStore.delete({
-    name: DEFAULT_COOKIE_NAME,
-    path: "/",
-    domain: domain || undefined,
+  (await cookies()).set(DEFAULT_COOKIE_NAME, "", {
+    ...cookieOptions(),
+    maxAge: 0,
   });
 }

@@ -1,18 +1,19 @@
-version: '3.8'
-
+name: monolith
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
-    container_name: monolith-postgres
-    restart: always
     environment:
       POSTGRES_USER: monolith
-      POSTGRES_PASSWORD: monolith_password
-      POSTGRES_DB: monolith_db
+      POSTGRES_PASSWORD: monolith_local_dev
+      POSTGRES_DB: monolith
     ports:
-      - "5432:5432"
+      - "127.0.0.1:55432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-
+      - monolith_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monolith -d monolith"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 volumes:
-  pgdata:
+  monolith_data:

@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { LayoutGrid, Gamepad2, Briefcase, HeartPulse, Star } from "lucide-react";
+import {
+  LayoutGrid,
+  Gamepad2,
+  Briefcase,
+  HeartPulse,
+  Star,
+} from "lucide-react";
 
 interface CategoryTabsProps {
   currentCategory: string;
@@ -9,13 +15,33 @@ interface CategoryTabsProps {
   favoritesCount: number;
 }
 
-export function CategoryTabs({ currentCategory, onSelectCategory, favoritesCount }: CategoryTabsProps) {
+export function CategoryTabs({
+  currentCategory,
+  onSelectCategory,
+  favoritesCount,
+}: CategoryTabsProps) {
   const tabs = [
     { id: "ALL", label: "All Apps", icon: LayoutGrid },
     { id: "GAME", label: "Gaming", icon: Gamepad2, color: "text-cyan-400" },
-    { id: "WORK", label: "Work & Tools", icon: Briefcase, color: "text-indigo-400" },
-    { id: "LIFESTYLE", label: "Lifestyle", icon: HeartPulse, color: "text-rose-400" },
-    { id: "FAVORITES", label: "Favorites", icon: Star, color: "text-amber-400", count: favoritesCount },
+    {
+      id: "WORK",
+      label: "Work & Tools",
+      icon: Briefcase,
+      color: "text-indigo-400",
+    },
+    {
+      id: "LIFESTYLE",
+      label: "Lifestyle",
+      icon: HeartPulse,
+      color: "text-rose-400",
+    },
+    {
+      id: "FAVORITES",
+      label: "Favorites",
+      icon: Star,
+      color: "text-amber-400",
+      count: favoritesCount,
+    },
   ];
 
   return (
@@ -28,6 +54,7 @@ export function CategoryTabs({ currentCategory, onSelectCategory, favoritesCount
           <button
             key={tab.id}
             type="button"
+            aria-pressed={isActive}
             onClick={() => onSelectCategory(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 ${
               isActive

@@ -1,164 +1,167 @@
-# Monolith Hub 🔮
+# Monolith Hub
 
-> A centralized ecosystem portal & application launcher for **Lifestyle, Work, and Gaming** with seamless **Single Sign-On (SSO)**, built with an **iOS LiquidGlass Dark Mode** aesthetic.
+A shared workspace for lifestyle, work, and gaming applications. The monorepo contains a Next.js Hub, the Cyber Arena demonstration app, and a server-side SSO SDK.
 
-![Monolith Hub Architecture](https://img.shields.io/badge/Architecture-Central%20Hub%20%2B%20SSO-indigo)
-![Next.js 15](https://img.shields.io/badge/Next.js-15%20(App%20Router)-black)
-![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-LiquidGlass-cyan)
-![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-emerald)
-![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
+## Requirements
 
----
+- Node.js 22.13 LTS or Node.js 24 or later
+- npm
+- PostgreSQL 16 or later (Docker Compose configuration included)
 
-## 🌟 Key Features
+## Local setup
 
-1. **Central App Launcher & Categorization**:
-   - Organize applications across **Lifestyle**, **Work**, and **Game** categories.
-   - Google / Microsoft 365 style **9-dot Waffle Menu** for instant access anywhere.
-   - **Pinned Favorites** system allowing users to bookmark their top tools.
-   - Live system health telemetry (**Online**, **Beta**, **Maintenance** indicators).
+Run commands from the repository root:
 
-2. **iOS LiquidGlass Dark Mode Design**:
-   - Translucent frosted glass layers (`backdrop-blur-2xl`), multi-specular highlights, and liquid glow reflections.
-   - Ambient fluid aurora lighting spots and responsive hover micro-interactions.
+```sh
+npm ci
+npm run setup
+docker compose up -d --wait
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
 
-3. **Zero-Redirect Single Sign-On (SSO)**:
-   - Shared domain cookie architecture (`Domain=.yourdomain.com`) combined with Signed JWTs (`jose`).
-   - Child systems on subdomains (e.g., `game.yourdomain.com`, `work.yourdomain.com`) verify the user session instantly without redirect flashing or re-authentication.
+Open the Hub at http://localhost:3000 and Cyber Arena at http://localhost:3001.
 
-4. **Global Spotlight (Cmd+K / ⌘K)**:
-   - Fast fuzzy search across applications, workflows, categories, and quick actions.
+`setup` generates random JWT and service credentials and writes three ignored files: root `.env`, `apps/hub/.env.local`, and `apps/demo-sub-app/.env.local`. It preserves existing environment files. If files already exist, configure them using the adjacent `.env.example` templates.
 
-5. **Unified Notification Center**:
-   - Central notification dropdown on the hub header.
-   - Child sub-apps can push in-app events, achievements, and tasks directly to the Hub via `POST /api/notifications`.
+Prisma commands read the root `.env`. Each Next.js app reads its own `.env.local`. Keep the database URL and shared signing key consistent across the appropriate files.
 
-6. **Admin Management Portal**:
-   - Register new ecosystem apps with custom URLs, icons, colors, and role permissions.
-   - 1-click **Maintenance Mode** switch to temporarily block traffic to sub-apps with a notification banner.
+The seed command adds example registry entries with upserts. It never deletes existing records, resets passwords, or creates accounts. Existing entries retain their configured URLs and permissions. The example apps other than Cyber Arena are registration placeholders, not implemented business applications.
 
-7. **Demo Sub-App & SDK Included**:
-   - `@monolith/auth-client`: Universal JWT verifier and cookie parser for child apps.
-   - `@monolith/demo-sub-app` ("Cyber Arena"): Fully functional sub-app demonstrating zero-redirect SSO session reading and event push.
+## Create the administrator
 
----
+Public registration always creates a Member. Provision administrators explicitly from a trusted terminal:
 
-## 📂 Repository Structure
+PowerShell:
+
+```powershell
+$env:ADMIN_EMAIL = "admin@example.com"
+$env:ADMIN_PASSWORD = "<a unique password of at least 12 characters>"
+npm run admin:create
+Remove-Item Env:ADMIN_PASSWORD
+```
+
+POSIX shell:
+
+```sh
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='<unique password>' npm run admin:create
+```
+
+The command refuses to overwrite or promote an existing account. No demo administrator or shared default password is installed.
+
+## Commands
+
+| Command                                            | Purpose                                                         |
+| -------------------------------------------------- | --------------------------------------------------------------- |
+| `npm run dev`                                      | Start both apps                                                 |
+| `npm run dev:hub` / `dev:demo`                     | Start one app                                                   |
+| `npm run build`                                    | Build SDK and both production apps                              |
+| `npm run start --workspace=@monolith/hub`          | Start production Hub                                            |
+| `npm run start --workspace=@monolith/demo-sub-app` | Start production Arena                                          |
+| `npm run lint`                                     | ESLint                                                          |
+| `npm run typecheck`                                | Generate Prisma client and check every workspace                |
+| `npm test`                                         | Authentication, validation, request-policy, and singleton tests |
+| `npm run check`                                    | Lint, types, unit tests, and production builds                  |
+| `npm run test:e2e`                                 | Desktop and mobile browser/integration tests                    |
+| `npm run db:migrate`                               | Apply committed SQL migrations                                  |
+| `npm run db:push`                                  | Synchronize schema during disposable local development          |
+| `npm run db:seed`                                  | Add missing example registry records                            |
+| `npm run admin:create`                             | Provision an administrator                                      |
+
+For browser tests, prepare the local database and build both apps first, then run:
+
+```sh
+npx playwright install chromium
+npm run test:e2e
+```
+
+The suite starts production servers automatically. To use an installed Chrome/Edge browser locally, set `PLAYWRIGHT_CHANNEL=chrome` or `msedge`. Test fixtures use unique identifiers and remove only the records they create. Run against a dedicated development/test database.
+
+## Architecture
 
 ```text
-Monolith/
-├── apps/
-│   ├── hub/                  # Central Monolith Hub Portal (Next.js 15, Prisma, Tailwind)
-│   │   ├── prisma/           # PostgreSQL Schema & Seed script
-│   │   └── src/
-│   │       ├── app/          # App router pages (Home, Login, Admin, APIs)
-│   │       ├── components/   # LiquidGlass Navbar, WaffleMenu, AppCard, Spotlight
-│   │       └── lib/          # Prisma client and session managers
-│   └── demo-sub-app/         # Example Sub-App: "Cyber Arena" (Port 3001)
-│       └── src/              # Reads hub_session cookie & pushes notifications to hub
-├── packages/
-│   └── auth-client/          # Shared SSO Verification SDK (@monolith/auth-client)
-├── docker-compose.yml        # PostgreSQL container setup
-└── package.json              # Monorepo workspaces configuration
+apps/hub                 Portal, account APIs, app registry, notifications
+apps/demo-sub-app        Cyber Arena and server-to-server notification example
+packages/auth-client     JWT signing/verification, roles, cookie parsing
+scripts                  Local setup and administrator provisioning
+tests                    Unit/security tests and browser integration tests
+.github/workflows        CI with PostgreSQL, checks, and browser tests
 ```
 
----
+- Guests see Guest applications. Members see Guest and Member applications. Administrators see all permitted applications.
+- All Hub launchers route through `/apps/:slug/launch`. The server rechecks current role, disabled status, maintenance status, and the destination URL.
+- Maintenance redirects to the app status page. It controls launching from the Hub; a separate service must enforce its own authorization and maintenance policy at its own endpoints.
+- Favorites have a single shared source of state. Failed saves remain visible as errors rather than appearing saved.
+- Search supports Ctrl/Cmd+K, arrow keys, Enter, Escape, focus containment, and category selection.
+- Notifications refresh when opened and every 30 seconds while the document is visible.
 
-## 🚀 Quickstart Guide
+## SSO configuration
 
-### 1. Prerequisites
-- **Node.js**: v18+ (Node 24 recommended)
-- **PostgreSQL**: Local Postgres or via `docker compose up -d`
+Set `MONOLITH_JWT_SECRET` to at least 32 random bytes on every trusted server. There is no fallback key. Set `SESSION_COOKIE_DOMAIN=.example.com` on the Hub to share the HttpOnly cookie with trusted subdomains. Leave it blank for localhost.
 
-### 2. Environment Setup
-Copy `.env.example` to `.env`:
-```env
-DATABASE_URL="postgresql://monolith:monolith_password@localhost:5432/monolith_db"
-MONOLITH_JWT_SECRET="monolith_super_secret_jwt_key_change_in_production_2026"
-SESSION_COOKIE_DOMAIN="" # Leave empty for localhost, or set to ".yourdomain.com"
-PORT=3000
+Production cookies use Secure, HttpOnly, SameSite=Lax, and a seven-day lifetime. Tokens require the expected algorithm, issuer, audience, subject, role, issue time, and expiry. Existing tokens issued before this rework are invalid; users must sign in again.
+
+Hub requests resolve the token subject against the database, so deleted users and updated roles take effect immediately. The Demo also asks the Hub for the current profile. Offline SDK consumers validate a signed snapshot until its expiry and should perform an authoritative profile check when immediate revocation is required.
+
+All servers holding the shared HMAC key are trusted to mint sessions. Keep this SDK and the key on trusted servers; never expose the key through `NEXT_PUBLIC_*` variables, browser bundles, or untrusted sub-apps. Use an asymmetric identity provider if sub-app servers must not share session-signing authority.
+
+Example server integration:
+
+```ts
+import { verifyHubSession, hasRequiredRole } from "@monolith/auth-client";
+
+const user = await verifyHubSession(request.headers.get("cookie"));
+if (!user || !hasRequiredRole(user.role, "MEMBER")) {
+  return new Response("Unauthorized", { status: 401 });
+}
 ```
 
-### 3. Install & Seed Database
-```bash
-# Install all dependencies across monorepo
-npm install
+The SDK exports compiled JavaScript and TypeScript declarations. Build it with `npm run build:packages` before using it outside the Next.js workspaces.
 
-# Build shared auth SDK
-npm run build --workspace=@monolith/auth-client
+## Notification integration
 
-# Sync schema and populate seed data
-npx prisma db push --schema=apps/hub/prisma/schema.prisma
-npx tsx apps/hub/prisma/seed.ts
+Set a separate random service token for each trusted application in the Hub environment:
+
+```dotenv
+MONOLITH_SERVICE_TOKENS='{"Cyber Arena":"<random credential of at least 32 bytes>"}'
 ```
 
-### 4. Run Development Servers
-```bash
-# Run Central Hub (Port 3000)
-npm run dev:hub
+Set the matching `MONOLITH_SERVICE_TOKEN` in the Arena server environment. Browser code calls its own `/api/victory` endpoint. The Arena verifies the session, derives the recipient from that session, and forwards a server-authenticated request to the Hub. Service credentials never reach the browser.
 
-# In a second terminal, run Demo Sub-App (Port 3001)
-npm run dev:demo
+```ts
+await fetch(new URL("/api/notifications", process.env.HUB_URL), {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + process.env.MONOLITH_SERVICE_TOKEN,
+  },
+  body: JSON.stringify({
+    userId,
+    title: "Task assigned",
+    message: "A new task is ready.",
+    linkUrl: "https://work.example.com/tasks",
+  }),
+});
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Service identity comes from the configured credential. User-authenticated requests may notify only their own account, and their source is labeled Monolith. Notification links accept only HTTP(S) URLs or local paths. All read/update operations remain scoped to the current account.
 
----
+## Deployment
 
-## 🔑 Demo Accounts
+1. Create a PostgreSQL database and set production environment variables on each server.
+2. Set `HUB_URL` and `DEMO_URL` to the externally visible HTTPS origins. Configure the cookie domain for your trusted subdomains.
+3. Generate fresh signing/service credentials. Provision the administrator and update example registry destinations for your environment.
+4. Run `npm ci`, `npm run db:migrate`, and `npm run build`.
+5. Start each production workspace behind your HTTPS reverse proxy.
+6. Set `ALLOW_REGISTRATION=false` if registration should be closed.
 
-The database comes pre-seeded with two accounts:
+Login and notification rate limits use shared PostgreSQL counters. Registration also has a shared traffic ceiling. Set stricter IP limits at your ingress when exposing the service publicly; the application does not trust arbitrary forwarded-IP headers.
 
-| Role | Email | Password | Privileges |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@monolith.local` | `admin1234` | Full access, Admin Portal, App Registry CRUD, Maintenance switch |
-| **Member** | `user@monolith.local` | `user1234` | Standard member access, Pinned favorites, Notification center |
+The initial migration is for new databases. For an existing installation whose schema already matches the original repository, back up the database and baseline the original tables before applying schema changes. Do not apply an initial create-tables migration blindly to a populated database. See `docs/upgrading.md`.
 
-*(You can also click the quick one-click demo login buttons directly on the `/login` page).*
+Dependency overrides upgrade Prisma's transitive `deepmerge-ts` and the lint tools' `minimatch` to patched versions. Keep these overrides until the upstream dependency ranges include the fixes, and verify updates with `npm run check`.
 
----
+The provided Docker database password is for localhost development only. Production configuration must use its own database credentials.
 
-## 🔌 Integrating a New Sub-App with Monolith SSO
-
-To connect your own sub-app (e.g. `lifestyle.yourdomain.com` or `work.yourdomain.com`):
-
-1. **Install `@monolith/auth-client`**:
-   ```bash
-   npm install @monolith/auth-client
-   ```
-
-2. **Verify Session in your Sub-App (Next.js / Node.js / Express)**:
-   ```typescript
-   import { verifyHubSession } from "@monolith/auth-client";
-
-   // Next.js Server Component or Route Handler:
-   const user = await verifyHubSession(req.headers.get("cookie"));
-
-   if (!user) {
-     // User is not logged into Monolith Hub
-     return redirect("https://hub.yourdomain.com/login");
-   }
-
-   console.log("Logged in user:", user.name, user.email, user.role);
-   ```
-
-3. **Push Notification to Central Hub**:
-   ```typescript
-   await fetch("https://hub.yourdomain.com/api/notifications", {
-     method: "POST",
-     headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({
-       userId: user.id,
-       title: "New Task Assigned",
-       message: "Sprint task #42 is ready for review.",
-       sourceApp: "Task Studio",
-       linkUrl: "https://work.yourdomain.com/task/42",
-     }),
-   });
-   ```
-
----
-
-## 🛡️ License
-
-MIT License. Designed with ❤️ for next-generation lifestyle, work & game ecosystems.
+MIT License.

@@ -1,10 +1,8 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
-import { Search, X, ArrowRight, CornerDownLeft, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { IconRenderer } from "../common/IconRenderer";
-
-interface AppItemData {
+interface App {
   id: string;
   name: string;
   description: string;
@@ -14,147 +12,148 @@ interface AppItemData {
   color: string;
   status: string;
 }
-
-interface CommandPaletteProps {
-  apps: AppItemData[];
+export function CommandPalette({
+  apps,
+  isOpen,
+  onClose,
+  onSelectCategory,
+}: {
+  apps: App[];
   isOpen: boolean;
   onClose: () => void;
   onSelectCategory?: (category: string) => void;
-}
-
-export function CommandPalette({ apps, isOpen, onClose, onSelectCategory }: CommandPaletteProps) {
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const [query, setQuery] = useState("");
-
+  const [active, setActive] = useState(0);
+  const results = apps.filter((a) =>
+    (a.name + " " + a.description + " " + a.category)
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        if (isOpen) onClose();
-        else {
-          // Open handled by parent if listening, but here we can manage it
-        }
-      }
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const filteredApps = apps.filter((app) => {
-    const q = query.toLowerCase();
-    return (
-      app.name.toLowerCase().includes(q) ||
-      app.category.toLowerCase().includes(q) ||
-      app.description.toLowerCase().includes(q)
-    );
-  });
-
+    if (isOpen) {
+      setQuery("");
+      setActive(0);
+      dialog.current?.showModal();
+    } else dialog.current?.close();
+  }, [isOpen]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Spotlight Window */}
-      <div className="relative w-full max-w-2xl rounded-2xl liquid-glass overflow-hidden shadow-2xl border border-white/15 animate-in fade-in zoom-in-95 duration-200">
-        {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-white/10">
-          <Search className="w-5 h-5 text-indigo-400 mr-3 shrink-0" />
-          <input
-            type="text"
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search apps, games, workflows, or categories... (Press Esc to exit)"
-            className="w-full bg-transparent text-white placeholder-zinc-400 text-sm focus:outline-none"
-          />
-          {query && (
+    <dialog
+      ref={dialog}
+      onCancel={onClose}
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === dialog.current) onClose();
+      }}
+      aria-label="Search applications"
+      className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-white/15 bg-[#111522] p-0 text-white shadow-2xl backdrop:bg-black/75"
+    >
+      <div className="flex items-center gap-3 border-b border-white/10 p-4">
+        <Search className="h-5 w-5 text-indigo-300" />
+        <input
+          autoFocus
+          aria-label="Search applications"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="app-results"
+          aria-activedescendant={
+            results[active] ? "result-" + results[active].id : undefined
+          }
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActive(0);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              setActive((i) =>
+                Math.max(
+                  0,
+                  Math.min(
+                    results.length - 1,
+                    i + (e.key === "ArrowDown" ? 1 : -1),
+                  ),
+                ),
+              );
+            }
+            if (e.key === "Enter" && results[active]) {
+              onClose();
+              window.location.assign(results[active].url);
+            }
+          }}
+          placeholder="Search your applications…"
+          className="min-w-0 flex-1 bg-transparent text-base outline-none"
+        />
+        <button
+          aria-label="Close search"
+          onClick={onClose}
+          className="rounded-lg p-2 text-zinc-400"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      {onSelectCategory && (
+        <div className="flex gap-2 border-b border-white/10 p-3">
+          {["GAME", "WORK", "LIFESTYLE"].map((c) => (
             <button
-              onClick={() => setQuery("")}
-              className="p-1 rounded-md text-zinc-400 hover:text-white mr-2"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-          <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold text-zinc-400 bg-white/10 rounded border border-white/10">
-            ESC
-          </kbd>
-        </div>
-
-        {/* Quick Category Filters */}
-        <div className="px-4 py-2 bg-white/[0.02] border-b border-white/5 flex items-center gap-2 overflow-x-auto text-xs">
-          <span className="text-zinc-500 font-medium mr-1 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Jump:
-          </span>
-          {["GAME", "WORK", "LIFESTYLE"].map((cat) => (
-            <button
-              key={cat}
+              key={c}
               onClick={() => {
-                if (onSelectCategory) onSelectCategory(cat);
+                onSelectCategory(c);
                 onClose();
               }}
-              className="px-2.5 py-1 rounded-lg liquid-pill text-zinc-300 hover:text-white font-medium"
+              className="rounded-lg bg-white/5 px-3 py-2 text-xs text-zinc-300"
             >
-              {cat}
+              {c}
             </button>
           ))}
         </div>
-
-        {/* Search Results */}
-        <div className="max-h-96 overflow-y-auto p-2 space-y-1">
-          {filteredApps.length === 0 ? (
-            <div className="py-12 text-center text-zinc-500 text-sm">
-              No matching applications found for &quot;{query}&quot;
-            </div>
-          ) : (
-            filteredApps.map((app) => (
-              <a
-                key={app.id}
-                href={app.url}
-                target={app.url.startsWith("http") ? "_blank" : "_self"}
-                rel="noreferrer"
-                onClick={onClose}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-white/10 group transition-all duration-150 border border-transparent hover:border-white/10"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-lg bg-gradient-to-br ${app.color} flex items-center justify-center text-white shrink-0 shadow group-hover:scale-105 transition-transform`}
-                  >
-                    <IconRenderer name={app.icon} className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white group-hover:text-indigo-300 transition-colors">
-                        {app.name}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 uppercase">
-                        {app.category}
-                      </span>
-                      {app.status === "MAINTENANCE" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
-                          Maintenance
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-zinc-400 truncate">{app.description}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center text-zinc-500 group-hover:text-white transition-colors shrink-0 ml-3">
-                  <span className="text-xs mr-1 opacity-0 group-hover:opacity-100 transition-opacity">Launch</span>
-                  <CornerDownLeft className="w-4 h-4" />
-                </div>
-              </a>
-            ))
-          )}
-        </div>
+      )}
+      <div
+        id="app-results"
+        role="listbox"
+        aria-label="Applications"
+        className="max-h-[55dvh] overflow-y-auto p-2"
+      >
+        {results.map((app, i) => (
+          <button
+            key={app.id}
+            id={"result-" + app.id}
+            role="option"
+            aria-selected={i === active}
+            onMouseMove={() => setActive(i)}
+            onClick={() => {
+              onClose();
+              window.location.assign(app.url);
+            }}
+            className={
+              "flex w-full items-center gap-3 rounded-xl p-3 text-left " +
+              (active === i ? "bg-white/10" : "")
+            }
+          >
+            <span className={"rounded-xl bg-gradient-to-br p-2 " + app.color}>
+              <IconRenderer name={app.icon} className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-medium break-words">{app.name}</span>
+              <span className="block truncate text-xs text-zinc-400">
+                {app.status === "MAINTENANCE"
+                  ? "Maintenance — view status"
+                  : app.description}
+              </span>
+            </span>
+          </button>
+        ))}
+        {!results.length && (
+          <p role="status" className="p-10 text-center text-sm text-zinc-400">
+            No matching applications.
+          </p>
+        )}
       </div>
-    </div>
+      <p className="border-t border-white/10 px-4 py-3 text-xs text-zinc-500">
+        ↑ ↓ to navigate · Enter to open · Esc to close
+      </p>
+    </dialog>
   );
 }

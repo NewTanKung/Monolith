@@ -1,26 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+let productionClient: PrismaClient | undefined;
 
-function getOrCreatePrismaInstance(): PrismaClient {
-  if (globalForPrisma.prisma) {
-    return globalForPrisma.prisma;
+export function getPrisma(): PrismaClient {
+  if (process.env.NODE_ENV === "production") {
+    return (productionClient ??= new PrismaClient());
   }
-  const client = new PrismaClient();
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
-  return client;
+  return (globalForPrisma.prisma ??= new PrismaClient());
 }
 
-// Lazy Proxy: instantiates PrismaClient upon first access to prevent module-load crash
+// Keep construction lazy so builds do not need a running database.
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
   get(_target, prop) {
-    const instance = getOrCreatePrismaInstance() as any;
-    const value = instance[prop];
-    if (typeof value === "function") {
-      return value.bind(instance);
-    }
-    return value;
+    const client = getPrisma();
+    const value = Reflect.get(client, prop);
+    return typeof value === "function" ? value.bind(client) : value;
   },
 });

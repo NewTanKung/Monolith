@@ -22,8 +22,10 @@ const config: Config = {
         },
       },
       boxShadow: {
-        "liquid-sm": "0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
-        "liquid-md": "0 16px 40px -8px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15)",
+        "liquid-sm":
+          "0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+        "liquid-md":
+          "0 16px 40px -8px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15)",
         "liquid-glow-indigo": "0 0 40px -10px rgba(99, 102, 241, 0.35)",
         "liquid-glow-cyan": "0 0 40px -10px rgba(6, 182, 212, 0.35)",
         "liquid-glow-purple": "0 0 40px -10px rgba(168, 85, 247, 0.35)",
@@ -33,7 +35,7 @@ const config: Config = {
         "3xl": "64px",
       },
       animation: {
-        "float": "float 8s ease-in-out infinite",
+        float: "float 8s ease-in-out infinite",
         "pulse-slow": "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       keyframes: {

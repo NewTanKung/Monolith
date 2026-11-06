@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { AdminAppManager } from "./AdminAppManager";
 import Link from "next/link";
-import { ArrowLeft, ShieldAlert, Layers } from "lucide-react";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 
 export const revalidate = 0;
 
@@ -22,7 +22,10 @@ export default async function AdminPage() {
   const notificationsCount = await prisma.notification.count();
 
   return (
-    <div className="min-h-screen pb-16 px-4 sm:px-8 pt-6 max-w-7xl mx-auto">
+    <div
+      id="main-content"
+      className="min-h-screen pb-16 px-4 sm:px-8 pt-6 max-w-7xl mx-auto"
+    >
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 mb-8">
         <div className="flex items-center gap-3">
@@ -43,7 +46,8 @@ export default async function AdminPage() {
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
-              Manage ecosystem apps, maintenance switches, and service permissions
+              Manage ecosystem apps, maintenance switches, and service
+              permissions
             </p>
           </div>
         </div>
@@ -51,13 +55,20 @@ export default async function AdminPage() {
         {/* Admin User Info */}
         <div className="flex items-center gap-3 liquid-glass px-4 py-2 rounded-2xl shrink-0">
           <img
-            src={user.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+            src={
+              user.image ||
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+            }
             alt={user.name || "Admin"}
             className="w-8 h-8 rounded-full object-cover ring-1 ring-amber-400/50"
           />
           <div>
-            <div className="text-xs font-semibold text-white">{user.name || user.email}</div>
-            <div className="text-[10px] text-amber-400 font-bold uppercase">Root Privileges</div>
+            <div className="text-xs font-semibold text-white">
+              {user.name || user.email}
+            </div>
+            <div className="text-[10px] text-amber-400 font-bold uppercase">
+              Root Privileges
+            </div>
           </div>
         </div>
       </div>
@@ -65,24 +76,44 @@ export default async function AdminPage() {
       {/* Overview Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">Total Applications</div>
-          <div className="text-2xl font-bold text-white mt-1">{apps.length}</div>
-          <div className="text-[11px] text-zinc-500 mt-1">Across Game, Work & Lifestyle</div>
+          <div className="text-xs text-zinc-400 uppercase font-semibold">
+            Total Applications
+          </div>
+          <div className="text-2xl font-bold text-white mt-1">
+            {apps.length}
+          </div>
+          <div className="text-[11px] text-zinc-500 mt-1">
+            Across Game, Work & Lifestyle
+          </div>
         </div>
         <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">Registered Users</div>
+          <div className="text-xs text-zinc-400 uppercase font-semibold">
+            Registered Users
+          </div>
           <div className="text-2xl font-bold text-white mt-1">{usersCount}</div>
-          <div className="text-[11px] text-indigo-400 mt-1">Single Sign-On Enabled</div>
+          <div className="text-[11px] text-indigo-400 mt-1">
+            Single Sign-On Enabled
+          </div>
         </div>
         <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">Active Notifications</div>
-          <div className="text-2xl font-bold text-white mt-1">{notificationsCount}</div>
-          <div className="text-[11px] text-emerald-400 mt-1">Aggregated across services</div>
+          <div className="text-xs text-zinc-400 uppercase font-semibold">
+            Active Notifications
+          </div>
+          <div className="text-2xl font-bold text-white mt-1">
+            {notificationsCount}
+          </div>
+          <div className="text-[11px] text-emerald-400 mt-1">
+            Aggregated across services
+          </div>
         </div>
       </div>
 
       {/* Interactive App Management Panel */}
-      <AdminAppManager initialApps={apps as any} />
+      <AdminAppManager
+        initialApps={apps.map(
+          ({ createdAt: _created, updatedAt: _updated, ...app }) => app,
+        )}
+      />
     </div>
   );
 }
