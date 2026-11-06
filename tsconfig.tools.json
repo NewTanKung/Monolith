@@ -9,5 +9,10 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["tests/**/*.ts", "scripts/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "playwright.config.ts",
+    "playwright.workers.config.ts"
+  ]
 }

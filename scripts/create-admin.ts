@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { createDatabaseClient } from "../apps/hub/src/lib/database-client";
 import bcrypt from "bcryptjs";
 import { createInterface } from "node:readline/promises";
-const prisma = new PrismaClient();
+const prisma = createDatabaseClient();
 const prompt = createInterface({
   input: process.stdin,
   output: process.stdout,

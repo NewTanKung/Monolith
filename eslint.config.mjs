@@ -5,6 +5,8 @@ export default tseslint.config(
   {
     ignores: [
       "**/node_modules/**",
+      "**/.open-next/**",
+      "**/.wrangler/**",
       "**/.next/**",
       "**/dist/**",
       "**/next-env.d.ts",

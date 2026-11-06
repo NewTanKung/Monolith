@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { createDatabaseClient } from "../../apps/hub/src/lib/database-client";
 import bcrypt from "bcryptjs";
-const prisma = new PrismaClient();
+const prisma = createDatabaseClient();
+const hubBase = process.env.E2E_HUB_URL || "http://localhost:3000";
+const demoBase = process.env.E2E_DEMO_URL || "http://localhost:3001";
 const run = "e2e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
 const email = run + "@example.test";
 const adminEmail = "admin-" + email;
@@ -14,8 +16,17 @@ async function login(page: import("@playwright/test").Page, admin = false) {
   await page.goto("/login");
   await page.getByLabel("Email Address").fill(admin ? adminEmail : email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign In to Ecosystem" }).click();
-  await expect(page).toHaveURL("http://localhost:3000/");
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/auth/login" &&
+        response.request().method() === "POST",
+      { timeout: 30000 },
+    ),
+    page.getByRole("button", { name: "Sign In to Ecosystem" }).click(),
+  ]);
+  expect(response.status(), (await response.json()).error).toBe(200);
+  await expect(page).toHaveURL(hubBase + "/");
   await expect(
     page.getByRole("heading", { name: /Welcome back/ }),
   ).toBeVisible();
@@ -204,7 +215,7 @@ test("member cannot target another account and Demo delivers a server-authentica
       })
     ).status(),
   ).toBe(403);
-  await page.goto("http://localhost:3001");
+  await page.goto(demoBase);
   await expect(
     page.getByText("Connected to Monolith", { exact: true }),
   ).toBeVisible();
@@ -212,7 +223,7 @@ test("member cannot target another account and Demo delivers a server-authentica
     .getByRole("button", { name: "Simulate victory", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("Delivered");
-  await page.goto("http://localhost:3000");
+  await page.goto(hubBase);
   await page.locator('summary[aria-label^="Notifications"]').click();
   await expect(
     page.getByRole("heading", { name: "Victory in Cyber Arena", exact: true }),

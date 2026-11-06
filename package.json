@@ -29,7 +29,16 @@
     "admin:create": "node --env-file=.env --import tsx scripts/create-admin.ts",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "cf:build": "npm run cf:build:hub && npm run cf:build:demo",
+    "cf:build:hub": "npm run generate && npm run build:packages && npm run build:worker --workspace=@monolith/hub",
+    "cf:build:demo": "npm run build:packages && npm run build:worker --workspace=@monolith/demo-sub-app",
+    "cf:deploy:hub": "npm run deploy:worker --workspace=@monolith/hub",
+    "cf:deploy:demo": "npm run deploy:worker --workspace=@monolith/demo-sub-app",
+    "cf:check": "npm run check:worker --workspace=@monolith/hub && npm run check:worker --workspace=@monolith/demo-sub-app",
+    "cf:preview:hub": "npm run preview:worker --workspace=@monolith/hub -- --port 3000",
+    "cf:preview:demo": "npm run preview:worker --workspace=@monolith/demo-sub-app -- --port 3001",
+    "test:e2e:workers": "playwright test --config=playwright.workers.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -41,13 +50,15 @@
     "prettier": "^3.9.10",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.72.1"
+    "typescript-eslint": "^8.72.1",
+    "wrangler": "^4.158.0"
   },
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.0",
-    "minimatch": "^11.0.1"
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.4"
   }
 }

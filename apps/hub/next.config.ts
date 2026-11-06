@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  serverExternalPackages: [
+    "@prisma/client",
+    ".prisma/client",
+    "@prisma/adapter-pg",
+    "pg",
+  ],
   async headers() {
     return [
       {
