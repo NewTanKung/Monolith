@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // Root-level Wrangler commands explicitly target the Hub.
-  // Deploy Cyber Arena using npm run cf:deploy:demo.
+  // Root-level Wrangler commands target the Hub.
   "name": "monolith-hub",
   "main": "apps/hub/.open-next/worker.js",
   "compatibility_date": "2026-11-06",

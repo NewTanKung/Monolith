@@ -34,7 +34,7 @@ If the database already contains a RateLimit table from local development, inspe
 - Replace the old public JWT secret with a freshly generated key of at least 32 random bytes.
 - Set the same key on the Hub and every trusted SSO server.
 - Previous JWTs lack the new issuer/audience requirements. Existing users must sign in again.
-- Rotate or remove the original seeded demo accounts (`admin@monolith.local` and `user@monolith.local`) if they exist. Their old passwords were public.
+- Rotate or remove default seeded accounts if they exist.
 - The new seed preserves existing records and never resets user credentials.
 - Registration now always creates Members. Administrator provisioning is an explicit local command.
 
@@ -46,7 +46,7 @@ The reworked Admin portal supports editing the entire record. URLs accept HTTP(S
 
 ## Notification senders
 
-The previous anonymous endpoint is closed. Configure per-service credentials in `MONOLITH_SERVICE_TOKENS`, update each sender to use a Bearer credential from its server, and remove direct cross-origin browser POSTs. The Demo now provides a same-origin authenticated forwarding endpoint.
+The previous anonymous endpoint is closed. Configure per-service credentials in `MONOLITH_SERVICE_TOKENS`, update each sender to use a Bearer credential from its server, and remove direct cross-origin browser POSTs. External systems now provide same-origin authenticated forwarding endpoints.
 
 ## Verification and rollback
 

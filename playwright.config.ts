@@ -28,11 +28,5 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 60000,
     },
-    {
-      command: "npm run start --workspace=@monolith/demo-sub-app",
-      url: "http://localhost:3001",
-      reuseExistingServer: !process.env.CI,
-      timeout: 60000,
-    },
   ],
 });
