@@ -1,0 +1,19 @@
+{
+  "name": "monolith-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monolith Hub - Central Hub & App Launcher for Lifestyle, Work, and Gaming with SSO",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:hub": "npm run dev --workspace=@monolith/hub",
+    "dev:demo": "npm run dev --workspace=@monolith/demo-sub-app",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
