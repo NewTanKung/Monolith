@@ -13,57 +13,33 @@ export async function POST(req: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-      });
+    const user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
 
-      if (user && user.passwordHash) {
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
-        if (isMatch) {
-          const hubUser = {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            image: user.image,
-          };
-          await setSessionCookie(hubUser);
-          return NextResponse.json({ success: true, user: hubUser });
-        }
-      }
-    } catch (dbErr) {
-      console.warn("DB connection failed during login, checking in-memory demo accounts");
+    if (!user || !user.passwordHash) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // In-memory demo accounts fallback (in case PostgreSQL is not running locally)
-    if (cleanEmail === "admin@monolith.local" && password === "admin1234") {
-      const adminUser = {
-        id: "admin-demo-id",
-        email: "admin@monolith.local",
-        name: "Neo Commander",
-        role: "ADMIN" as const,
-        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      };
-      await setSessionCookie(adminUser);
-      return NextResponse.json({ success: true, user: adminUser });
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    if (cleanEmail === "user@monolith.local" && password === "user1234") {
-      const memberUser = {
-        id: "user-demo-id",
-        email: "user@monolith.local",
-        name: "Alex Vance",
-        role: "MEMBER" as const,
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      };
-      await setSessionCookie(memberUser);
-      return NextResponse.json({ success: true, user: memberUser });
-    }
+    const hubUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image,
+    };
 
-    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    // Issue Domain Cookie & Signed JWT
+    await setSessionCookie(hubUser);
+
+    return NextResponse.json({ success: true, user: hubUser });
   } catch (err: any) {
     console.error("Login error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Authentication failed. Please verify your database connection." }, { status: 500 });
   }
 }
