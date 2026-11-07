@@ -88,26 +88,13 @@ export function Navbar({
     <>
       <header className="launcher-nav relative z-40 px-4 sm:px-8">
         <div className="mx-auto max-w-[1440px] flex items-center justify-between gap-4">
-          {/* Logo & Brand */}
+          {/* Home logo */}
           <Link
             href="/"
             aria-label="หน้าแรก Monolith"
-            className="brand-link flex items-center gap-3 shrink-0"
+            className="brand-link flex items-center shrink-0"
           >
             <MonolithMark className="brand-mark" />
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold tracking-tight text-white text-base">
-                  Monolith
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                  Hub
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-400 hidden sm:block tracking-wide">
-                พื้นที่บริการของคุณ
-              </span>
-            </div>
           </Link>
 
           {/* Right Navigation Controls */}
