@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { createDatabaseClient } from "../../apps/hub/src/lib/database-client";
 import bcrypt from "bcryptjs";
+import { loadEnvFile } from "node:process";
+loadEnvFile("apps/hub/.env.local");
 const prisma = createDatabaseClient();
 const hubBase = process.env.E2E_HUB_URL || "http://localhost:3000";
 const run = "e2e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
@@ -217,9 +219,19 @@ test("member cannot target another account and service delivers an authenticated
       })
     ).status(),
   ).toBe(403);
+  const serviceTokens: Record<string, string> = JSON.parse(
+    process.env.MONOLITH_SERVICE_TOKENS || "{}",
+  );
+  const serviceToken = Object.values(serviceTokens).find(
+    (token) => Buffer.byteLength(token) >= 32,
+  );
+  expect(
+    serviceToken,
+    "Configure a service token with npm run setup before running e2e tests.",
+  ).toBeTruthy();
   const serviceResponse = await page.request.post("/api/notifications", {
     headers: {
-      Authorization: "Bearer test-service-token",
+      Authorization: `Bearer ${serviceToken}`,
     },
     data: {
       userId: memberId,
@@ -228,11 +240,14 @@ test("member cannot target another account and service delivers an authenticated
       sourceApp: "External System",
     },
   });
-  expect(serviceResponse.status()).toBe(200);
+  expect(serviceResponse.status()).toBe(201);
   await page.goto(hubBase);
   await page.locator('summary[aria-label^="Notifications"]').click();
   await expect(
-    page.getByRole("heading", { name: "Authenticated Event Delivered", exact: true }),
+    page.getByRole("heading", {
+      name: "Authenticated Event Delivered",
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Mark read", exact: true })
