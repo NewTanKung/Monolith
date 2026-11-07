@@ -28,16 +28,16 @@ export function AppCard({
 }) {
   const maintenance = app.status === "MAINTENANCE";
   const status = maintenance
-    ? "Maintenance"
+    ? "กำลังปรับปรุง"
     : app.status === "BETA"
       ? "Beta"
-      : "Available";
+      : "เปิดให้ใช้งาน";
   return (
     <article className="service-tile">
       <a
         href={app.url}
         className="service-link"
-        aria-label={(maintenance ? "View status of " : "Open ") + app.name}
+        aria-label={(maintenance ? "ดูสถานะ " : "เปิด ") + app.name}
         title={app.description + " · " + status}
       >
         <span className="service-icon liquid-glass">
@@ -56,14 +56,14 @@ export function AppCard({
         <h3 className="service-name">{app.name}</h3>
         <span className="service-caption">
           {maintenance
-            ? "Maintenance"
+            ? "กำลังปรับปรุง"
             : app.status === "BETA"
-              ? "Beta access"
+              ? "เวอร์ชันทดลอง"
               : app.category === "GAME"
-                ? "Gaming"
+                ? "เกม"
                 : app.category === "WORK"
-                  ? "Work & tools"
-                  : "Lifestyle"}
+                  ? "งานและเครื่องมือ"
+                  : "ไลฟ์สไตล์"}
         </span>
       </a>
       <button
@@ -71,8 +71,10 @@ export function AppCard({
         onClick={() => onToggleFavorite(app.id)}
         disabled={pending}
         aria-pressed={!!app.isFavorite}
-        aria-label={(app.isFavorite ? "Unpin " : "Pin ") + app.name}
-        title={signedIn ? "Save to favorites" : "Sign in to save favorites"}
+        aria-label={(app.isFavorite ? "เลิกปักหมุด " : "ปักหมุด ") + app.name}
+        title={
+          signedIn ? "บันทึกรายการโปรด" : "เข้าสู่ระบบเพื่อบันทึกรายการโปรด"
+        }
         className={"service-pin " + (app.isFavorite ? "is-pinned" : "")}
       >
         {pending ? (

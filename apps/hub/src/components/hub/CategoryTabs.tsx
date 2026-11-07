@@ -21,23 +21,23 @@ export function CategoryTabs({
   favoritesCount,
 }: CategoryTabsProps) {
   const tabs = [
-    { id: "ALL", label: "All Apps", icon: LayoutGrid },
-    { id: "GAME", label: "Gaming", icon: Gamepad2, color: "text-cyan-400" },
+    { id: "ALL", label: "ทั้งหมด", icon: LayoutGrid },
+    { id: "GAME", label: "เกม", icon: Gamepad2, color: "text-cyan-400" },
     {
       id: "WORK",
-      label: "Work & Tools",
+      label: "งานและเครื่องมือ",
       icon: Briefcase,
       color: "text-indigo-400",
     },
     {
       id: "LIFESTYLE",
-      label: "Lifestyle",
+      label: "ไลฟ์สไตล์",
       icon: HeartPulse,
       color: "text-rose-400",
     },
     {
       id: "FAVORITES",
-      label: "Favorites",
+      label: "รายการโปรด",
       icon: Star,
       color: "text-amber-400",
       count: favoritesCount,
@@ -45,7 +45,7 @@ export function CategoryTabs({
   ];
 
   return (
-    <div className="launcher-categories" aria-label="Filter services">
+    <div className="launcher-categories" aria-label="กรองบริการ">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = currentCategory === tab.id;
@@ -55,6 +55,10 @@ export function CategoryTabs({
             key={tab.id}
             type="button"
             aria-pressed={isActive}
+            aria-label={tab.label}
+            aria-description={
+              tab.count !== undefined ? `${tab.count} รายการ` : undefined
+            }
             onClick={() => onSelectCategory(tab.id)}
             className={`category-pill ${isActive ? "is-active" : ""}`}
           >

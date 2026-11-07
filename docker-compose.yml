@@ -1,5 +1,14 @@
 name: monolith
 services:
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    ports:
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   db:
     image: postgres:16-alpine
     environment:

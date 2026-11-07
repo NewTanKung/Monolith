@@ -29,6 +29,7 @@ export function hasRequiredRole(
 ): boolean {
   return ROLES.indexOf(role ?? "GUEST") >= ROLES.indexOf(minimum);
 }
+/** @deprecated Legacy JWT helper. New Hub sessions use server-side introspection. */
 export async function signHubToken(
   user: HubUser,
   customSecret?: string,
@@ -99,6 +100,7 @@ export function extractHubSessionFromCookie(
   }
   return null;
 }
+/** @deprecated Does not verify the new opaque sessions. Use getServiceSession from /server. */
 export async function verifyHubSession(
   cookieHeader: string | null | undefined,
   customSecret?: string,

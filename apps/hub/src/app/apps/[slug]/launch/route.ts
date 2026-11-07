@@ -18,18 +18,23 @@ export async function GET(
       app.status === "DISABLED" ||
       !hasRequiredRole(user?.role, app.minRole)
     ) {
-      throw new HttpError(404, "Application not found.");
+      throw new HttpError(404, "ไม่พบบริการ");
     }
     if (app.status === "MAINTENANCE") {
-      return NextResponse.redirect(new URL("/apps/" + app.slug, req.url));
+      return NextResponse.redirect(
+        new URL("/apps/" + app.slug, process.env.HUB_URL || req.url),
+      );
     }
-    const target = new URL(parse(safeUrl, app.url), req.url);
+    const target = new URL(
+      parse(safeUrl, app.url),
+      process.env.HUB_URL || req.url,
+    );
     const ownPath = "/apps/" + app.slug;
     if (
-      target.origin === new URL(req.url).origin &&
+      target.origin === new URL(process.env.HUB_URL || req.url).origin &&
       target.pathname === ownPath + "/launch"
     ) {
-      throw new HttpError(400, "Application URL points to its own launcher.");
+      throw new HttpError(400, "URL นี้ชี้กลับมาที่ปุ่มเปิดบริการของตัวเอง");
     }
     return NextResponse.redirect(target, {
       status: 303,

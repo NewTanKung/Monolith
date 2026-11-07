@@ -8,13 +8,15 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
       <p className="text-xs uppercase tracking-widest text-indigo-300">
         Monolith Hub
       </p>
-      <h1 className="text-3xl font-bold">We could not load your workspace.</h1>
-      <p className="text-zinc-400">Please try again in a moment.</p>
+      <h1 className="text-3xl font-bold">โหลดพื้นที่บริการไม่สำเร็จ</h1>
+      <p className="text-zinc-400">
+        กรุณาลองใหม่อีกครั้ง หากยังไม่สำเร็จให้ติดต่อผู้ดูแลระบบ
+      </p>
       <button
         onClick={reset}
         className="self-start rounded-xl bg-indigo-600 px-5 py-3 font-semibold"
       >
-        Try again
+        ลองใหม่
       </button>
     </main>
   );

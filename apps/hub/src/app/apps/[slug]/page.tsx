@@ -25,7 +25,7 @@ export default async function AppDetailPage({
   return (
     <main id="main-content" className="mx-auto min-h-dvh max-w-4xl px-5 py-16">
       <Link href="/" className="text-sm text-zinc-400">
-        ← Return to Monolith Hub
+        ← กลับหน้า Monolith Hub
       </Link>
       <section className="mt-8 rounded-3xl liquid-glass p-8 sm:p-12 space-y-6">
         <div
@@ -48,11 +48,11 @@ export default async function AppDetailPage({
             role="status"
             className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200"
           >
-            This application is undergoing maintenance. Please check back later.
+            บริการนี้อยู่ระหว่างปรับปรุง กรุณากลับมาอีกครั้งภายหลัง
           </p>
         ) : (
           <p className="text-sm text-zinc-400">
-            This application is registered in your Monolith ecosystem.
+            บริการนี้อยู่ในทะเบียน Monolith ของคุณ
           </p>
         )}
         {!maintenance && !app.url.includes("/apps/" + app.slug) && (
@@ -60,7 +60,7 @@ export default async function AppDetailPage({
             href={"/apps/" + app.slug + "/launch"}
             className="inline-flex rounded-xl bg-indigo-600 px-5 py-3 font-semibold"
           >
-            Open application ↗
+            เปิดบริการ ↗
           </a>
         )}
       </section>

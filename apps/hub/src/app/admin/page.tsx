@@ -1,119 +1,45 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { AdminAppManager } from "./AdminAppManager";
-import Link from "next/link";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
-
+import { AdminConsole } from "@/components/admin/AdminConsole";
 export const revalidate = 0;
-
-export default async function AdminPage() {
+export default async function Page() {
   const user = await getCurrentUser();
-
-  if (!user || user.role !== "ADMIN") {
-    redirect("/login");
-  }
-
-  const apps = await prisma.appItem.findMany({
-    orderBy: { orderIndex: "asc" },
-  });
-
-  const usersCount = await prisma.user.count();
-  const notificationsCount = await prisma.notification.count();
-
-  return (
-    <div
-      id="main-content"
-      className="min-h-screen pb-16 px-4 sm:px-8 pt-6 max-w-7xl mx-auto"
-    >
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 mb-8">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="p-2.5 rounded-xl liquid-pill text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN")
+    return (
+      <main id="main-content" className="account-shell">
+        <section className="account-panel liquid-glass">
+          <h1 className="text-xl font-semibold">หน้านี้สำหรับผู้ดูแลระบบ</h1>
+          <Link href="/" className="mt-5 inline-block text-teal-200">
+            กลับหน้า Hub
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Hub Administration
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30 flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5" />
-                Admin Portal
-              </span>
-            </div>
-            <p className="text-xs text-zinc-400 mt-1">
-              Manage ecosystem apps, maintenance switches, and service
-              permissions
-            </p>
-          </div>
-        </div>
-
-        {/* Admin User Info */}
-        <div className="flex items-center gap-3 liquid-glass px-4 py-2 rounded-2xl shrink-0">
-          <img
-            src={
-              user.image ||
-              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-            }
-            alt={user.name || "Admin"}
-            className="w-8 h-8 rounded-full object-cover ring-1 ring-amber-400/50"
-          />
-          <div>
-            <div className="text-xs font-semibold text-white">
-              {user.name || user.email}
-            </div>
-            <div className="text-[10px] text-amber-400 font-bold uppercase">
-              Root Privileges
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">
-            Total Applications
-          </div>
-          <div className="text-2xl font-bold text-white mt-1">
-            {apps.length}
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
-            Across Game, Work & Lifestyle
-          </div>
-        </div>
-        <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">
-            Registered Users
-          </div>
-          <div className="text-2xl font-bold text-white mt-1">{usersCount}</div>
-          <div className="text-[11px] text-indigo-400 mt-1">
-            Single Sign-On Enabled
-          </div>
-        </div>
-        <div className="rounded-2xl liquid-glass p-5">
-          <div className="text-xs text-zinc-400 uppercase font-semibold">
-            Active Notifications
-          </div>
-          <div className="text-2xl font-bold text-white mt-1">
-            {notificationsCount}
-          </div>
-          <div className="text-[11px] text-emerald-400 mt-1">
-            Aggregated across services
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive App Management Panel */}
-      <AdminAppManager
-        initialApps={apps.map(
+        </section>
+      </main>
+    );
+  const apps = await prisma.appItem.findMany({
+    orderBy: [{ orderIndex: "asc" }, { id: "asc" }],
+  });
+  return (
+    <main
+      id="main-content"
+      className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8"
+    >
+      <header className="mb-8 border-b border-white/10 pb-6">
+        <Link href="/" className="text-sm text-teal-200">
+          ← กลับหน้า Hub
+        </Link>
+        <h1 className="mt-5 text-2xl font-semibold">จัดการ Monolith</h1>
+        <p className="mt-2 text-sm text-zinc-400">
+          บริการ สมาชิก และการเชื่อมต่อ · {user.name || user.email}
+        </p>
+      </header>
+      <AdminConsole
+        apps={apps.map(
           ({ createdAt: _created, updatedAt: _updated, ...app }) => app,
         )}
       />
-    </div>
+    </main>
   );
 }

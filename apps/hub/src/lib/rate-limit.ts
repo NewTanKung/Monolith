@@ -20,7 +20,11 @@ export async function rateLimit(
     update: { count: { increment: 1 } },
   });
   if (result.count > limit)
-    throw new HttpError(429, "Too many requests. Please try again later.");
+    throw new HttpError(
+      429,
+      "ทำรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่",
+      "RATE_LIMITED",
+    );
   // Expired buckets are disposable and contain no original identifiers.
   await prisma.rateLimit.deleteMany({
     where: { expiresAt: { lt: new Date(now - windowMs) } },

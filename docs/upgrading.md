@@ -1,53 +1,77 @@
-# Upgrading an existing installation
+# อัปเกรด สำรอง และกู้คืน
 
-Back up PostgreSQL and retain the previous deployment before applying schema changes.
+สำรอง PostgreSQL และเก็บ deployment รุ่นเดิมก่อนอัปเกรด ทดสอบบนสำเนาฐานข้อมูลก่อนใช้งานจริง การอัปเกรดเพิ่มตารางและคอลัมน์ ไม่ลบหรือ reset บัญชี รหัสผ่าน role บริการ รายการโปรด หรือการแจ้งเตือน
 
-## Database
+## สำรองฐานข้อมูล
 
-The initial migration represents the original repository schema (User, AppItem, UserFavorite, and Notification). The next migration creates the shared RateLimit table.
-
-For a fresh database, run:
+สำหรับ local Docker หรือ PostgreSQL ที่มี `pg_dump` ติดตั้งแล้ว:
 
 ```sh
+node --env-file=.env scripts/database-backup.mjs backups/before-upgrade.sql
+```
+
+คำสั่งเขียนไฟล์เป็น binary-safe เพื่อไม่ให้ PowerShell แปลง encoding และไม่เขียนทับไฟล์ที่มีอยู่ เก็บไฟล์สำรองนอก Git และจำกัดผู้เข้าถึง เพราะมีข้อมูลส่วนตัวและ password hashes
+
+ทดสอบ restore ลงฐานข้อมูลว่างที่สร้างแยกไว้ ห้ามใช้ชื่อฐานข้อมูล production ที่กำลังให้บริการ:
+
+```sh
+node --env-file=.env scripts/database-backup.mjs backups/before-upgrade.sql --restore-to=monolith_restore_test
+```
+
+คำสั่ง restore ปฏิเสธฐานข้อมูลที่มีตารางอยู่แล้ว และไม่ล้างข้อมูลให้อัตโนมัติ PostgreSQL ที่ไม่ได้ใช้ Docker ต้องมี `psql` ใน PATH ด้วย
+
+## ฐานข้อมูลใหม่
+
+```sh
+npm ci
+npm run setup
+docker compose up -d --wait
 npm run db:migrate
 ```
 
-For a database previously initialized using the original repository's `prisma db push`:
+## ฐานข้อมูลเดิม
 
-1. Confirm the existing tables match the original schema. Review custom schema changes separately.
-2. Mark the original baseline as applied, without creating or replacing its tables:
+หากมีประวัติ Prisma migration ถูกต้องอยู่แล้ว ให้สำรองและรัน `npm run db:migrate` ได้เลย
+
+หากเดิมใช้ `db push` และยังไม่มี migration history ให้ตรวจ schema จริงก่อน baseline:
+
+- `20261106000000_initial` คือ User, AppItem, UserFavorite และ Notification รุ่นเดิม
+- `20261106000100_rate_limits` คือ RateLimit หากยังไม่มีตารางนี้ ให้ migrate สร้างตามปกติ
+
+หลังยืนยันว่าตารางเดิมตรงกับ migration จึง mark เฉพาะสิ่งที่มีอยู่แล้ว:
 
 ```sh
 node --env-file=.env node_modules/prisma/build/index.js migrate resolve --applied 20261106000000_initial --schema=apps/hub/prisma/schema.prisma
 ```
 
-3. Apply the additive RateLimit migration:
+เฉพาะเมื่อมี RateLimit ที่ตรงกับ migration อยู่แล้ว:
 
 ```sh
-npm run db:migrate
+node --env-file=.env node_modules/prisma/build/index.js migrate resolve --applied 20261106000100_rate_limits --schema=apps/hub/prisma/schema.prisma
 ```
 
-If the database already contains a RateLimit table from local development, inspect that schema and baseline the additive migration only after confirming it matches. Production rollouts should use committed migrations, not `db push`.
+จากนั้น `npm run db:migrate` จะเพิ่ม production_accounts migration ห้ามใช้ reset, force-reset หรือ db push แทนขั้นตอนอัปเกรด production
 
-## Accounts and sessions
+## บัญชีและ session เปลี่ยนอย่างไร
 
-- Replace the old public JWT secret with a freshly generated key of at least 32 random bytes.
-- Set the same key on the Hub and every trusted SSO server.
-- Previous JWTs lack the new issuer/audience requirements. Existing users must sign in again.
-- Rotate or remove default seeded accounts if they exist.
-- The new seed preserves existing records and never resets user credentials.
-- Registration now always creates Members. Administrator provisioning is an explicit local command.
+- Cookie JWT รุ่นเดิมไม่ใช้กับ Hub รุ่นใหม่ ผู้ใช้ต้องเข้าสู่ระบบใหม่
+- บัญชีเดิมเก็บรหัสผ่านและ role ไว้ แต่เริ่มด้วย `emailVerifiedAt=null` ต้องยืนยันอีเมลก่อนล็อกอิน ใช้ปุ่มส่งยืนยันซ้ำเมื่อกรอกรหัสผ่านเดิมถูกต้อง หรือขอลิงก์ผ่าน API ยืนยันอีเมล
+- Admin เดิมตั้ง `ADMIN_EMAIL` ให้ตรงบัญชี แล้วรัน `npm run admin:verify` เปิด Mailpit บน local หรือกล่องจดหมายจริงหลังตั้ง Resend เพื่อยืนยันก่อนเปิดให้บริการ
+- `admin:create` สร้าง Admin ใหม่เท่านั้น ไม่เลื่อนสิทธิ์ Member หรือเขียนทับรหัสผ่านเดิม
+- อย่าแก้ `emailVerifiedAt` ในฐานข้อมูลเพื่อข้ามการยืนยัน และไม่สร้าง default admin/password
 
-## Applications
+## บริการและ token เดิม
 
-All Hub entry points now launch through a server-side role and status check. Configure each registry record's `minRole`, `status`, and destination URL. Maintenance governs navigation from the Hub; separate services must enforce their own policies.
+รายการบริการเดิมเป็น LINK โดยค่าเริ่มต้น เปลี่ยนบริการที่เชื่อม SDK จริงเป็น SSO จาก Admin แล้วสร้าง Service Token ของบริการนั้น บริการปลายทางย้ายไปใช้ `@monolith/auth-client/server`
 
-The reworked Admin portal supports editing the entire record. URLs accept HTTP(S) URLs and local paths. Arbitrary schemes, credentials embedded in URLs, malformed slugs, and unknown update fields are rejected.
+JSON map `MONOLITH_SERVICE_TOKENS` และ JWT signing key ที่เคยแชร์กับ Service ไม่ใช้ยืนยันในระบบใหม่ ต้องออก token ใหม่ และนำ signing key เดิมออกจาก Service ที่ย้ายเสร็จแล้ว
 
-## Notification senders
+Seed ไม่เพิ่มบริการ ไม่เปลี่ยน destination เดิม และไม่ลบข้อมูลที่มีอยู่ การลบบริการ local ที่ผู้ใช้เคยขอไม่ถูกรันอัตโนมัติบนฐานข้อมูลอื่น
 
-The previous anonymous endpoint is closed. Configure per-service credentials in `MONOLITH_SERVICE_TOKENS`, update each sender to use a Bearer credential from its server, and remove direct cross-origin browser POSTs. External systems now provide same-origin authenticated forwarding endpoints.
+## ตรวจรับและ rollback
 
-## Verification and rollback
+ทดสอบบัญชีเดิม การยืนยันอีเมล สิทธิ์ Admin และ Service จริงก่อนเปิด traffic ใช้ `/api/health/ready` และตรวจการส่งถึง inbox จริง การมี API key อย่างเดียวไม่ยืนยันว่า sender domain ถูกต้อง
 
-Run `npm run check` and `npm run test:e2e` against a dedicated test database before deploying. The database addition is separate from the original baseline, and the code can be rolled back while retaining the unused RateLimit table. Restore credentials deliberately; do not reinstate the public fallback signing key.
+หาก rollback โค้ด ให้คงตาราง/คอลัมน์เพิ่มไว้ ไม่ทำ destructive down migration และให้ผู้ใช้ล็อกอินใหม่ ถ้าจำเป็นต้อง restore ให้หยุด writers ก่อน กู้ลงฐานข้อมูลแยก ตรวจจำนวนข้อมูลและสิทธิ์ แล้วสลับ connection อย่างมีแผน ข้อมูลที่เกิดหลัง backup ต้องประเมินก่อนสลับกลับ
+
+รัน `npm run maintenance:cleanup` เป็นประจำเพื่อล้าง session, email token และ rate-limit counter ที่หมดอายุ โดยไม่กระทบ session ที่ยังใช้ได้

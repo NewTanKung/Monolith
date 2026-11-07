@@ -5,6 +5,7 @@
   "compatibility_date": "2026-11-06",
   "compatibility_flags": ["nodejs_compat"],
   "keep_vars": true,
+  "vars": { "APP_ENV": "production", "MAIL_PROVIDER": "resend" },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",

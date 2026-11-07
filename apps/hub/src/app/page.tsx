@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const user = await getCurrentUser();
   const allowedRoles = ROLES.slice(0, ROLES.indexOf(user?.role || "GUEST") + 1);
-  const [apps, favorites, notifications] = await Promise.all([
+  const [apps, favorites, notifications, unreadCount] = await Promise.all([
     prisma.appItem.findMany({
       where: {
         status: { not: "DISABLED" },
@@ -25,9 +25,12 @@ export default async function HomePage() {
       ? prisma.notification.findMany({
           where: { userId: user.id },
           orderBy: { createdAt: "desc" },
-          take: 30,
+          take: 31,
         })
       : [],
+    user
+      ? prisma.notification.count({ where: { userId: user.id, isRead: false } })
+      : 0,
   ]);
   const pinned = new Set(favorites.map((f) => f.appId));
   // Do not serialize raw external URLs into every client-side launcher.
@@ -40,9 +43,11 @@ export default async function HomePage() {
   );
   return (
     <HubDashboard
+      unreadCount={unreadCount}
+      nextCursor={notifications.length > 30 ? notifications[29].id : null}
       user={user}
       apps={visibleApps}
-      notifications={notifications.map((n) => ({
+      notifications={notifications.slice(0, 30).map((n) => ({
         ...n,
         linkUrl:
           n.linkUrl && safeUrl.safeParse(n.linkUrl).success ? n.linkUrl : null,

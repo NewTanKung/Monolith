@@ -51,7 +51,7 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="App Launcher"
+        aria-label="เมนูบริการ"
         aria-expanded={isOpen}
         className={`p-2.5 rounded-full transition-all duration-200 ${
           isOpen
@@ -73,7 +73,7 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
               </span>
             </div>
             <button
-              aria-label="Close app launcher"
+              aria-label="ปิดเมนูบริการ"
               onClick={() => setIsOpen(false)}
               className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5"
             >
@@ -110,7 +110,7 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
                         </span>
                         {app.status === "MAINTENANCE" && (
                           <span className="text-[9px] text-amber-400 font-medium">
-                            Maint.
+                            ปรับปรุง
                           </span>
                         )}
                       </a>
@@ -123,7 +123,7 @@ export function WaffleMenu({ apps }: WaffleMenuProps) {
 
           <div className="mt-4 pt-3 border-t border-white/10 text-center">
             <span className="text-[11px] text-zinc-400">
-              All internal services unified by Monolith SSO
+              เปิดบริการที่คุณมีสิทธิ์ใช้งาน
             </span>
           </div>
         </div>

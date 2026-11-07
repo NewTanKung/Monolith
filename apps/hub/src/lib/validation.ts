@@ -50,6 +50,7 @@ export const appSchema = z
       .max(80),
     description: z.string().trim().max(1000).default(""),
     category: z.enum(["GAME", "WORK", "LIFESTYLE"]),
+    mode: z.enum(["LINK", "SSO"]).default("LINK"),
     status: z
       .enum(["ONLINE", "BETA", "MAINTENANCE", "DISABLED"])
       .default("ONLINE"),
@@ -83,6 +84,7 @@ export const appUpdateSchema = appSchema
   .extend({
     id: z.string().min(1),
     description: appSchema.shape.description.removeDefault().optional(),
+    mode: appSchema.shape.mode.removeDefault().optional(),
     status: appSchema.shape.status.removeDefault().optional(),
     icon: appSchema.shape.icon.removeDefault().optional(),
     color: appSchema.shape.color.removeDefault().optional(),
@@ -106,10 +108,24 @@ export const notificationSchema = z
   .strict();
 export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
-  if (!result.success)
+  if (!result.success) {
+    const fields: Record<string, string> = {};
+    for (const issue of result.error.issues) {
+      const key = String(issue.path[0] || "form");
+      fields[key] = /[\u0e00-\u0e7f]/.test(issue.message)
+        ? issue.message
+        : issue.code === "too_small"
+          ? "ข้อมูลสั้นเกินไปหรือยังไม่ครบ"
+          : issue.code === "too_big"
+            ? "ข้อมูลยาวเกินกำหนด"
+            : "รูปแบบข้อมูลไม่ถูกต้อง";
+    }
     throw new HttpError(
       400,
-      result.error.issues[0]?.message || "Invalid request.",
+      "กรุณาตรวจข้อมูลที่กรอก",
+      "VALIDATION_ERROR",
+      fields,
     );
+  }
   return result.data;
 }

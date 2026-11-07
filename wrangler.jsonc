@@ -6,6 +6,7 @@
   "compatibility_date": "2026-11-06",
   "compatibility_flags": ["nodejs_compat"],
   "keep_vars": true,
+  "vars": { "APP_ENV": "production", "MAIL_PROVIDER": "resend" },
   "build": { "command": "npm run cf:build:hub" },
   "assets": {
     "directory": "apps/hub/.open-next/assets",

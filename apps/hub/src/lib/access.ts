@@ -8,7 +8,7 @@ export async function accessibleApp(id: string, user: HubUser | null) {
     app.status === "DISABLED" ||
     !hasRequiredRole(user?.role, app.minRole)
   ) {
-    throw new HttpError(404, "Application not found.");
+    throw new HttpError(404, "บริการ not found.");
   }
   return app;
 }
