@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Avatar } from "../common/Avatar";
-import { Search, ShieldAlert, LogOut, Layers } from "lucide-react";
+import { MonolithMark } from "../common/MonolithMark";
+import { Search, ShieldAlert, LogOut } from "lucide-react";
 import { WaffleMenu } from "./WaffleMenu";
 import { NotificationDropdown, NotificationItem } from "./NotificationDropdown";
 import { CommandPalette } from "../search/CommandPalette";
@@ -87,28 +88,13 @@ export function Navbar({
     <>
       <header className="launcher-nav relative z-40 px-4 sm:px-8">
         <div className="mx-auto max-w-[1440px] flex items-center justify-between gap-4">
-          {/* Logo & Brand */}
+          {/* Home logo */}
           <Link
             href="/"
             aria-label="หน้าแรก Monolith"
-            className="flex items-center gap-3 group shrink-0"
+            className="brand-link flex items-center shrink-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-liquid-glow-indigo group-hover:scale-105 transition-transform">
-              <Layers className="w-5 h-5 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold tracking-tight text-white text-base">
-                  Monolith
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                  Hub
-                </span>
-              </div>
-              <span className="text-[10px] text-zinc-400 hidden sm:block tracking-wide">
-                พื้นที่บริการของคุณ
-              </span>
-            </div>
+            <MonolithMark className="brand-mark" />
           </Link>
 
           {/* Right Navigation Controls */}

@@ -79,7 +79,7 @@ export function AppGrid({
     );
   }
   return (
-    <section className="launcher-services" aria-label="บริการ">
+    <section className="launcher-services launcher-arrival" aria-label="บริการ">
       <CategoryTabs
         currentCategory={activeCategory}
         onSelectCategory={setActiveCategory}
