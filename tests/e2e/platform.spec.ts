@@ -6,6 +6,7 @@ loadEnvFile("apps/hub/.env.local");
 const prisma = createDatabaseClient();
 const hubBase = process.env.E2E_HUB_URL || "http://localhost:3000";
 const run = "e2e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+const publicAppName = "Launcher Service " + run;
 const email = run + "@example.test";
 const adminEmail = "admin-" + email;
 const password = "Testing-password-42";
@@ -36,6 +37,18 @@ async function login(page: import("@playwright/test").Page, admin = false) {
   ).toBeVisible();
 }
 test.beforeAll(async () => {
+  await prisma.appItem.create({
+    data: {
+      name: publicAppName,
+      slug: run + "-public",
+      description: "Public launcher fixture",
+      category: "GAME",
+      status: "ONLINE",
+      minRole: "GUEST",
+      url: "/apps/" + run + "-public",
+      icon: "Gamepad2",
+    },
+  });
   const hash = await bcrypt.hash(password, 12);
   memberId = (
     await prisma.user.create({
@@ -133,22 +146,22 @@ test("member favorites stay synchronized and search controls categories", async 
     0,
   );
   await page
-    .getByRole("button", { name: "Pin Cyber Arena", exact: true })
+    .getByRole("button", { name: "Pin " + publicAppName, exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Unpin Cyber Arena", exact: true }),
+    page.getByRole("button", { name: "Unpin " + publicAppName, exact: true }),
   ).toHaveCount(1);
   await page
-    .getByRole("button", { name: "Unpin Cyber Arena", exact: true })
+    .getByRole("button", { name: "Unpin " + publicAppName, exact: true })
     .first()
     .click();
   await expect(
-    page.getByRole("button", { name: "Pin Cyber Arena", exact: true }),
+    page.getByRole("button", { name: "Pin " + publicAppName, exact: true }),
   ).toHaveCount(1);
   await page.keyboard.press("Control+k");
   const search = page.getByRole("dialog", { name: "Search applications" });
   await expect(search).toBeVisible();
-  await search.getByRole("combobox").fill("arena");
+  await search.getByRole("combobox").fill(publicAppName);
   await expect(search.getByRole("option")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await expect(search).not.toBeVisible();
@@ -314,9 +327,9 @@ test("center search filters services and clears empty results", async ({
     name: "Search services",
     exact: true,
   });
-  await search.fill("CYBER ARENA");
+  await search.fill(publicAppName.toUpperCase());
   await expect(
-    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+    services.getByRole("heading", { name: publicAppName, exact: true }),
   ).toBeVisible();
   await expect(services.locator("article")).toHaveCount(1);
   await search.fill("no-service-matches-this-query");
@@ -327,10 +340,10 @@ test("center search filters services and clears empty results", async ({
     .click();
   await expect(search).toHaveValue("");
   await expect(
-    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+    services.getByRole("heading", { name: publicAppName, exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Work & Tools", exact: true }).click();
-  await search.fill("arena");
+  await search.fill(publicAppName);
   await expect(services.locator("article")).toHaveCount(0);
   await page.getByRole("button", { name: "All Apps", exact: true }).click();
   await expect(services.locator("article")).toHaveCount(1);

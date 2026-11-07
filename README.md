@@ -27,7 +27,7 @@ Open the Hub at http://localhost:3000.
 
 Prisma commands read the root `.env`. Next.js reads `apps/hub/.env.local`. Keep the database URL and shared signing key consistent across the appropriate files.
 
-The seed command adds example registry entries with upserts. It never deletes existing records, resets passwords, or creates accounts. Existing entries retain their configured URLs and permissions.
+The service registry starts empty. Add your real services through `/admin` after creating an administrator. The seed command does not add example services or change existing services, accounts, or notifications.
 
 ## Create the administrator
 
@@ -65,7 +65,7 @@ The command refuses to overwrite or promote an existing account. An administrato
 | `npm run test:e2e`                        | Desktop and mobile browser/integration tests                    |
 | `npm run db:migrate`                      | Apply committed SQL migrations                                  |
 | `npm run db:push`                         | Synchronize schema during disposable local development          |
-| `npm run db:seed`                         | Add missing example registry records                            |
+| `npm run db:seed`                         | No default services; preserve existing data                     |
 | `npm run admin:create`                    | Provision an administrator                                      |
 
 For browser tests, prepare the local database and build the app first, then run:
@@ -153,7 +153,7 @@ For Cloudflare, follow [docs/cloudflare.md](docs/cloudflare.md). The Hub has Ope
 
 1. Create a PostgreSQL database and set production environment variables on each server.
 2. Set `HUB_URL` to the externally visible HTTPS origin. Configure the cookie domain for your trusted subdomains.
-3. Generate fresh signing/service credentials. Provision the administrator and update example registry destinations for your environment.
+3. Generate fresh signing/service credentials. Provision the administrator and add your real service destinations through `/admin`.
 4. Run `npm ci`, `npm run db:migrate`, and `npm run build`.
 5. Start each production workspace behind your HTTPS reverse proxy.
 6. Set `ALLOW_REGISTRATION=false` if registration should be closed.
