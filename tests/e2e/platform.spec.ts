@@ -28,7 +28,10 @@ async function login(page: import("@playwright/test").Page, admin = false) {
   expect(response.status(), (await response.json()).error).toBe(200);
   await expect(page).toHaveURL(hubBase + "/");
   await expect(
-    page.getByRole("heading", { name: /Welcome back/ }),
+    page.getByText(
+      admin ? "Good to see you, Test Admin." : "Good to see you, Test Member.",
+      { exact: true },
+    ),
   ).toBeVisible();
 }
 test.beforeAll(async () => {
@@ -133,7 +136,7 @@ test("member favorites stay synchronized and search controls categories", async 
     .click();
   await expect(
     page.getByRole("button", { name: "Unpin Cyber Arena", exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(1);
   await page
     .getByRole("button", { name: "Unpin Cyber Arena", exact: true })
     .first()
@@ -282,4 +285,40 @@ test("search stays open when reopened immediately after Escape", async ({
     await search.getByRole("button", { name: "WORK", exact: true }).click();
     await expect(search).not.toBeVisible();
   }
+});
+
+test("center search filters services and clears empty results", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const services = page.getByRole("region", { name: "Services", exact: true });
+  const search = page.getByRole("searchbox", {
+    name: "Search services",
+    exact: true,
+  });
+  await search.fill("CYBER ARENA");
+  await expect(
+    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+  ).toBeVisible();
+  await expect(services.locator("article")).toHaveCount(1);
+  await search.fill("no-service-matches-this-query");
+  await expect(services.locator("article")).toHaveCount(0);
+  await expect(services.getByText(/No services match/)).toBeVisible();
+  await services
+    .getByRole("button", { name: "Clear search", exact: true })
+    .click();
+  await expect(search).toHaveValue("");
+  await expect(
+    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Work & Tools", exact: true }).click();
+  await search.fill("arena");
+  await expect(services.locator("article")).toHaveCount(0);
+  await page.getByRole("button", { name: "All Apps", exact: true }).click();
+  await expect(services.locator("article")).toHaveCount(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

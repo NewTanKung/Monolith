@@ -16,8 +16,14 @@ export function HubDashboard({
   notifications: NotificationItem[];
 }) {
   const [category, setCategory] = useState("ALL");
+  const [query, setQuery] = useState("");
   return (
-    <main id="main-content" className="min-h-dvh pb-16">
+    <main id="main-content" className="launcher-page">
+      <div className="launcher-backdrop" aria-hidden="true">
+        <div className="glass-orbit glass-orbit-one" />
+        <div className="glass-orbit glass-orbit-two" />
+        <div className="launcher-grain" />
+      </div>
       <Navbar
         user={user}
         apps={apps}
@@ -25,6 +31,8 @@ export function HubDashboard({
         onSelectCategory={setCategory}
       />
       <HeroSection
+        query={query}
+        onQueryChange={setQuery}
         userName={user?.name || (user ? user.email.split("@")[0] : null)}
         totalApps={apps.length}
         onlineApps={
@@ -33,6 +41,8 @@ export function HubDashboard({
         }
       />
       <AppGrid
+        query={query}
+        onClearSearch={() => setQuery("")}
         initialApps={apps}
         selectedCategory={category}
         signedIn={!!user}

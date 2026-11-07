@@ -81,15 +81,15 @@ export function Navbar({
 
   return (
     <>
-      <header className="sticky top-4 z-40 px-4 sm:px-8 mb-6">
-        <div className="max-w-7xl mx-auto rounded-2xl liquid-glass-nav px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+      <header className="launcher-nav relative z-40 px-4 sm:px-8">
+        <div className="mx-auto max-w-[1440px] flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <Link
             href="/"
             aria-label="Monolith home"
             className="flex items-center gap-3 group shrink-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-liquid-glow-indigo group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-liquid-glow-indigo group-hover:scale-105 transition-transform">
               <Layers className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
@@ -102,35 +102,18 @@ export function Navbar({
                 </span>
               </div>
               <span className="text-[10px] text-zinc-400 hidden sm:block tracking-wide">
-                Unified Ecosystem
+                YOUR CONNECTED SPACE
               </span>
             </div>
           </Link>
-
-          {/* Center Search Trigger (Spotlight) */}
-          <button
-            type="button"
-            onClick={() => setIsSearchOpen(true)}
-            className="flex-1 max-w-md hidden md:flex items-center justify-between px-3.5 py-2 rounded-xl liquid-input text-zinc-400 hover:text-white transition-all text-sm group"
-          >
-            <div className="flex items-center gap-2.5">
-              <Search className="w-4 h-4 text-zinc-400 group-hover:text-indigo-400 transition-colors" />
-              <span className="text-xs text-zinc-400">
-                Search apps, workflows, or games...
-              </span>
-            </div>
-            <kbd className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-zinc-300 border border-white/10 shadow-sm">
-              ⌘K
-            </kbd>
-          </button>
 
           {/* Right Navigation Controls */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Mobile Search Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2.5 rounded-full text-zinc-400 hover:text-white md:hidden hover:bg-white/10"
-              aria-label="Search"
+              className="p-2.5 rounded-full text-zinc-400 hover:text-white hover:bg-white/10"
+              aria-label="Search apps"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -228,7 +211,7 @@ export function Navbar({
             ) : (
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-semibold shadow-liquid-glow-indigo hover:brightness-110 transition-all"
+                className="px-4 py-2 rounded-xl liquid-glass text-white text-xs font-semibold shadow-liquid-glow-indigo hover:brightness-110 transition-all"
               >
                 Sign In
               </Link>

@@ -45,7 +45,7 @@ export function CategoryTabs({
   ];
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+    <div className="launcher-categories" aria-label="Filter services">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = currentCategory === tab.id;
@@ -56,13 +56,9 @@ export function CategoryTabs({
             type="button"
             aria-pressed={isActive}
             onClick={() => onSelectCategory(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 ${
-              isActive
-                ? "bg-white/20 text-white shadow-liquid-sm border border-white/25"
-                : "liquid-pill text-zinc-400 hover:text-white"
-            }`}
+            className={`category-pill ${isActive ? "is-active" : ""}`}
           >
-            <Icon className={`w-4 h-4 ${tab.color || ""}`} />
+            <Icon className="h-3.5 w-3.5" />
             <span>{tab.label}</span>
             {tab.count !== undefined && tab.count > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">
