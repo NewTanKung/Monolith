@@ -6,10 +6,14 @@ export function AppGrid({
   initialApps,
   selectedCategory = "ALL",
   signedIn,
+  query = "",
+  onClearSearch,
 }: {
   initialApps: AppItemData[];
   selectedCategory?: string;
   signedIn: boolean;
+  query?: string;
+  onClearSearch?: () => void;
 }) {
   const [apps, setApps] = useState(initialApps);
   const [activeCategory, setActiveCategory] = useState(selectedCategory);
@@ -49,14 +53,17 @@ export function AppGrid({
   const favorites = apps.filter((a) => a.isFavorite);
   const filtered = apps.filter(
     (a) =>
-      activeCategory === "ALL" ||
-      (activeCategory === "FAVORITES"
-        ? a.isFavorite
-        : a.category === activeCategory),
+      (activeCategory === "ALL" ||
+        (activeCategory === "FAVORITES"
+          ? a.isFavorite
+          : a.category === activeCategory)) &&
+      `${a.name} ${a.description} ${a.category}`
+        .toLocaleLowerCase()
+        .includes(query.trim().toLocaleLowerCase()),
   );
   function cards(items: AppItemData[]) {
     return (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="services-grid">
         {items.map((app) => (
           <AppCard
             key={app.id}
@@ -70,7 +77,7 @@ export function AppGrid({
     );
   }
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 sm:px-8">
+    <section className="launcher-services" aria-label="Services">
       <CategoryTabs
         currentCategory={activeCategory}
         onSelectCategory={setActiveCategory}
@@ -84,26 +91,40 @@ export function AppGrid({
           {error}
         </p>
       )}
-      {activeCategory === "ALL" && favorites.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-amber-200">
-            Pinned favorites
-          </h2>
-          {cards(favorites)}
-          <h2 className="pt-4 text-sm font-semibold text-zinc-400">
-            All applications
-          </h2>
-        </section>
-      )}
+      <div className="services-heading">
+        <h2>
+          {query.trim()
+            ? "Search results"
+            : activeCategory === "FAVORITES"
+              ? "Your favorites"
+              : "Your services"}
+        </h2>
+        <span role="status" aria-live="polite">
+          {filtered.length} {filtered.length === 1 ? "service" : "services"}
+        </span>
+      </div>
       {filtered.length ? (
         cards(filtered)
       ) : (
-        <div className="rounded-2xl liquid-glass p-12 text-center text-zinc-400">
-          {activeCategory === "FAVORITES"
-            ? "Your favorites will appear here. Pin an app to get started."
-            : "No applications in this category yet."}
+        <div className="services-empty liquid-glass">
+          <p>
+            {query.trim()
+              ? `No services match “${query.trim()}”.`
+              : activeCategory === "FAVORITES"
+                ? "Your favorites will appear here. Pin an app to get started."
+                : "No applications in this category yet."}
+          </p>
+          {query.trim() && (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="mt-4 text-sm text-teal-200 underline underline-offset-4"
+            >
+              Clear search
+            </button>
+          )}
         </div>
       )}
-    </div>
+    </section>
   );
 }

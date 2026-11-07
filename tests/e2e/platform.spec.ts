@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { createDatabaseClient } from "../../apps/hub/src/lib/database-client";
 import bcrypt from "bcryptjs";
+import { loadEnvFile } from "node:process";
+loadEnvFile("apps/hub/.env.local");
 const prisma = createDatabaseClient();
 const hubBase = process.env.E2E_HUB_URL || "http://localhost:3000";
 const run = "e2e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
@@ -27,7 +29,10 @@ async function login(page: import("@playwright/test").Page, admin = false) {
   expect(response.status(), (await response.json()).error).toBe(200);
   await expect(page).toHaveURL(hubBase + "/");
   await expect(
-    page.getByRole("heading", { name: /Welcome back/ }),
+    page.getByText(
+      admin ? "Good to see you, Test Admin." : "Good to see you, Test Member.",
+      { exact: true },
+    ),
   ).toBeVisible();
 }
 test.beforeAll(async () => {
@@ -132,7 +137,7 @@ test("member favorites stay synchronized and search controls categories", async 
     .click();
   await expect(
     page.getByRole("button", { name: "Unpin Cyber Arena", exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(1);
   await page
     .getByRole("button", { name: "Unpin Cyber Arena", exact: true })
     .first()
@@ -214,9 +219,19 @@ test("member cannot target another account and service delivers an authenticated
       })
     ).status(),
   ).toBe(403);
+  const serviceTokens: Record<string, string> = JSON.parse(
+    process.env.MONOLITH_SERVICE_TOKENS || "{}",
+  );
+  const serviceToken = Object.values(serviceTokens).find(
+    (token) => Buffer.byteLength(token) >= 32,
+  );
+  expect(
+    serviceToken,
+    "Configure a service token with npm run setup before running e2e tests.",
+  ).toBeTruthy();
   const serviceResponse = await page.request.post("/api/notifications", {
     headers: {
-      Authorization: "Bearer test-service-token",
+      Authorization: `Bearer ${serviceToken}`,
     },
     data: {
       userId: memberId,
@@ -225,11 +240,14 @@ test("member cannot target another account and service delivers an authenticated
       sourceApp: "External System",
     },
   });
-  expect(serviceResponse.status()).toBe(200);
+  expect(serviceResponse.status()).toBe(201);
   await page.goto(hubBase);
   await page.locator('summary[aria-label^="Notifications"]').click();
   await expect(
-    page.getByRole("heading", { name: "Authenticated Event Delivered", exact: true }),
+    page.getByRole("heading", {
+      name: "Authenticated Event Delivered",
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Mark read", exact: true })
@@ -285,4 +303,40 @@ test("search stays open when reopened immediately after Escape", async ({
     await search.getByRole("button", { name: "WORK", exact: true }).click();
     await expect(search).not.toBeVisible();
   }
+});
+
+test("center search filters services and clears empty results", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const services = page.getByRole("region", { name: "Services", exact: true });
+  const search = page.getByRole("searchbox", {
+    name: "Search services",
+    exact: true,
+  });
+  await search.fill("CYBER ARENA");
+  await expect(
+    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+  ).toBeVisible();
+  await expect(services.locator("article")).toHaveCount(1);
+  await search.fill("no-service-matches-this-query");
+  await expect(services.locator("article")).toHaveCount(0);
+  await expect(services.getByText(/No services match/)).toBeVisible();
+  await services
+    .getByRole("button", { name: "Clear search", exact: true })
+    .click();
+  await expect(search).toHaveValue("");
+  await expect(
+    services.getByRole("heading", { name: "Cyber Arena", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Work & Tools", exact: true }).click();
+  await search.fill("arena");
+  await expect(services.locator("article")).toHaveCount(0);
+  await page.getByRole("button", { name: "All Apps", exact: true }).click();
+  await expect(services.locator("article")).toHaveCount(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

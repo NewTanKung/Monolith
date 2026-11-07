@@ -1,5 +1,5 @@
 "use client";
-import { Star, ArrowUpRight, Wrench, Loader2 } from "lucide-react";
+import { Star, Wrench, Loader2 } from "lucide-react";
 import { IconRenderer } from "../common/IconRenderer";
 export interface AppItemData {
   id: string;
@@ -27,78 +27,60 @@ export function AppCard({
   signedIn: boolean;
 }) {
   const maintenance = app.status === "MAINTENANCE";
+  const status = maintenance
+    ? "Maintenance"
+    : app.status === "BETA"
+      ? "Beta"
+      : "Available";
   return (
-    <article className="liquid-card flex min-w-0 flex-col rounded-2xl p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div
-          className={
-            "flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br " +
-            app.color
-          }
-        >
-          <IconRenderer name={app.icon} className="h-6 w-6 text-white" />
-        </div>
-        <button
-          onClick={() => onToggleFavorite(app.id)}
-          disabled={pending}
-          aria-pressed={!!app.isFavorite}
-          aria-label={(app.isFavorite ? "Unpin " : "Pin ") + app.name}
-          title={signedIn ? "Save to favorites" : "Sign in to save favorites"}
-          className={
-            "rounded-lg p-2 disabled:opacity-50 " +
-            (app.isFavorite
-              ? "text-amber-300"
-              : "text-zinc-400 hover:text-white")
-          }
-        >
-          {pending ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Star
-              className={"h-5 w-5 " + (app.isFavorite ? "fill-current" : "")}
-            />
-          )}
-        </button>
-      </div>
-      <div className="mb-6 mt-5 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">
-          {app.category}
-          {app.isFeatured ? " / Featured" : ""}
-        </p>
-        <h3 className="mt-2 break-words text-lg font-semibold text-white">
-          {app.name}
-        </h3>
-        <p className="mt-2 break-words text-sm leading-relaxed text-zinc-400">
-          {app.description}
-        </p>
-      </div>
-      <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-        <span
-          className={
-            "flex items-center gap-1.5 text-xs " +
-            (maintenance ? "text-amber-300" : "text-emerald-300")
-          }
-        >
-          {maintenance ? (
-            <Wrench className="h-3 w-3" />
-          ) : (
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-          )}
+    <article className="service-tile">
+      <a
+        href={app.url}
+        className="service-link"
+        aria-label={(maintenance ? "View status of " : "Open ") + app.name}
+        title={app.description + " · " + status}
+      >
+        <span className="service-icon liquid-glass">
+          <span className={"service-icon-color bg-gradient-to-br " + app.color}>
+            <IconRenderer name={app.icon} className="h-6 w-6 text-white" />
+          </span>
+          <span
+            className={
+              "service-status " + (maintenance ? "is-maintenance" : "")
+            }
+            aria-label={status}
+          >
+            {maintenance && <Wrench size={8} />}
+          </span>
+        </span>
+        <h3 className="service-name">{app.name}</h3>
+        <span className="service-caption">
           {maintenance
             ? "Maintenance"
             : app.status === "BETA"
-              ? "Beta"
-              : "Available"}
+              ? "Beta access"
+              : app.category === "GAME"
+                ? "Gaming"
+                : app.category === "WORK"
+                  ? "Work & tools"
+                  : "Lifestyle"}
         </span>
-        <a
-          href={app.url}
-          className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
-          aria-label={(maintenance ? "View status of " : "Open ") + app.name}
-        >
-          {maintenance ? "View status" : "Open"}
-          <ArrowUpRight className="h-4 w-4" />
-        </a>
-      </div>
+      </a>
+      <button
+        type="button"
+        onClick={() => onToggleFavorite(app.id)}
+        disabled={pending}
+        aria-pressed={!!app.isFavorite}
+        aria-label={(app.isFavorite ? "Unpin " : "Pin ") + app.name}
+        title={signedIn ? "Save to favorites" : "Sign in to save favorites"}
+        className={"service-pin " + (app.isFavorite ? "is-pinned" : "")}
+      >
+        {pending ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <Star size={12} fill={app.isFavorite ? "currentColor" : "none"} />
+        )}
+      </button>
     </article>
   );
 }

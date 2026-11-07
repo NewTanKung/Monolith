@@ -1,38 +1,73 @@
-import { Activity } from "lucide-react";
+import { ArrowRight, Layers, Search, X } from "lucide-react";
+import { ShineBorder } from "../magicui/ShineBorder";
 export function HeroSection({
   userName,
   totalApps,
   onlineApps,
+  query,
+  onQueryChange,
 }: {
   userName?: string | null;
   totalApps: number;
   onlineApps: number;
+  query: string;
+  onQueryChange: (value: string) => void;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-8 sm:pt-10">
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-white/10 pb-8">
-        <div className="min-w-0 max-w-3xl">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[.2em] text-indigo-300">
-            Your connected workspace
-          </p>
-          <h1 className="break-words text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-            {userName ? "Welcome back, " + userName : "Everything starts here."}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Your tools, games, and everyday spaces. One place to find them, one
-            account to connect them.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <Activity className="h-5 w-5 text-emerald-300" />
-          <div>
-            <p className="text-xs text-zinc-400">Available applications</p>
-            <p className="font-semibold tabular-nums">
-              {onlineApps}{" "}
-              <span className="font-normal text-zinc-500">/ {totalApps}</span>
-            </p>
-          </div>
-        </div>
+    <section className="launcher-hero" aria-labelledby="launcher-title">
+      <p className="launcher-eyebrow">YOUR EVERYDAY, CONNECTED</p>
+      <h1 id="launcher-title" className="launcher-wordmark">
+        <Layers aria-hidden="true" />
+        Monolith<span>.</span>
+      </h1>
+      <p className="launcher-greeting">
+        {userName
+          ? `Good to see you, ${userName}.`
+          : "A little less searching. A lot more doing."}
+      </p>
+      <div className="launcher-search liquid-glass">
+        <ShineBorder
+          shineColor={["#77dcd3", "#b3b8ff", "#e4ecff"]}
+          duration={16}
+        />
+        <Search
+          className="shrink-0 text-white/60"
+          size={20}
+          aria-hidden="true"
+        />
+        <label className="sr-only" htmlFor="service-search">
+          Search services
+        </label>
+        <input
+          id="service-search"
+          type="search"
+          autoComplete="off"
+          placeholder="Where do you want to go?"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={() => onQueryChange("")}
+            aria-label="Clear search"
+            className="search-clear"
+          >
+            <X size={16} />
+          </button>
+        ) : (
+          <span className="search-arrow" aria-hidden="true">
+            <ArrowRight size={18} />
+          </span>
+        )}
+      </div>
+      <div className="launcher-context">
+        <span className="availability-dot" />
+        <span>
+          {onlineApps} of {totalApps} services available
+        </span>
+        <span className="context-divider">/</span>
+        <span>One account. Every space.</span>
       </div>
     </section>
   );

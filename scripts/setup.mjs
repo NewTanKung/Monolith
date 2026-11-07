@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 
-const destinations = [
-  ".env",
-  "apps/hub/.env.local",
-];
+const destinations = [".env", "apps/hub/.env.local"];
 
 if (destinations.some((p) => fs.existsSync(p))) {
   console.log(
