@@ -6,18 +6,24 @@ import { notificationSchema, parse, safeUrl } from "@/lib/validation";
 import { notificationService } from "@/lib/notification-auth";
 import { rateLimit } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user) throw new HttpError(401, "Sign in to view notifications.");
+    if (!user) throw new HttpError(401, "กรุณาเข้าสู่ระบบเพื่อดูการแจ้งเตือน");
+    const cursor = new URL(req.url).searchParams.get("cursor");
     const notifications = await prisma.notification.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 30,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 31,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
     return NextResponse.json(
       {
-        notifications: notifications.map((n) => ({
+        nextCursor: notifications.length > 30 ? notifications[29].id : null,
+        unreadCount: await prisma.notification.count({
+          where: { userId: user.id, isRead: false },
+        }),
+        notifications: notifications.slice(0, 30).map((n) => ({
           ...n,
           linkUrl:
             n.linkUrl && safeUrl.safeParse(n.linkUrl).success
@@ -33,39 +39,39 @@ export async function GET() {
 }
 export async function POST(req: Request) {
   try {
-    const service = notificationService(req);
+    const service = await notificationService(req);
     if (!service) assertSameOrigin(req);
     const currentUser = service ? null : await getCurrentUser();
-    if (!service && !currentUser)
-      throw new HttpError(401, "Authentication required.");
+    if (!service && !currentUser) throw new HttpError(401, "กรุณาเข้าสู่ระบบ");
     const body = parse(notificationSchema, await jsonBody(req));
     let userId: string;
     if (service) {
       const target = body.userId
         ? await prisma.user.findUnique({
             where: { id: body.userId },
-            select: { id: true },
+            select: { id: true, status: true, emailVerifiedAt: true },
           })
         : body.email
           ? await prisma.user.findUnique({
               where: { email: body.email },
-              select: { id: true },
+              select: { id: true, status: true, emailVerifiedAt: true },
             })
           : null;
-      if (!target) throw new HttpError(404, "Recipient not found.");
+      if (!target || target.status !== "ACTIVE" || !target.emailVerifiedAt)
+        throw new HttpError(404, "ไม่พบผู้รับที่ใช้งานได้");
       userId = target.id;
     } else {
       if (
         (body.userId && body.userId !== currentUser!.id) ||
         (body.email && body.email !== currentUser!.email)
       ) {
-        throw new HttpError(403, "You can only notify your own account.");
+        throw new HttpError(403, "ส่งแจ้งเตือนได้เฉพาะบัญชีของคุณ");
       }
       userId = currentUser!.id;
     }
     await rateLimit(
       "notification",
-      service || userId,
+      service?.id || userId,
       service ? 120 : 20,
       60000,
     );
@@ -74,7 +80,7 @@ export async function POST(req: Request) {
         userId,
         title: body.title,
         message: body.message,
-        sourceApp: service || "Monolith",
+        sourceApp: service?.app.name || "Monolith",
         linkUrl: body.linkUrl || null,
       },
     });
@@ -87,7 +93,7 @@ export async function PUT(req: Request) {
   try {
     assertSameOrigin(req);
     const user = await getCurrentUser();
-    if (!user) throw new HttpError(401, "Authentication required.");
+    if (!user) throw new HttpError(401, "กรุณาเข้าสู่ระบบ");
     await prisma.notification.updateMany({
       where: { userId: user.id, isRead: false },
       data: { isRead: true },
@@ -101,14 +107,14 @@ export async function PATCH(req: Request) {
   try {
     assertSameOrigin(req);
     const user = await getCurrentUser();
-    if (!user) throw new HttpError(401, "Authentication required.");
+    if (!user) throw new HttpError(401, "กรุณาเข้าสู่ระบบ");
     const id = new URL(req.url).searchParams.get("id");
-    if (!id) throw new HttpError(400, "Notification ID is required.");
+    if (!id) throw new HttpError(400, "ต้องระบุการแจ้งเตือน");
     const result = await prisma.notification.updateMany({
       where: { id, userId: user.id },
       data: { isRead: true },
     });
-    if (!result.count) throw new HttpError(404, "Notification not found.");
+    if (!result.count) throw new HttpError(404, "ไม่พบการแจ้งเตือน");
     return NextResponse.json({ success: true });
   } catch (error) {
     return apiError(error);

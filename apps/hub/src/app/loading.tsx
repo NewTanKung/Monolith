@@ -3,11 +3,11 @@ export default function Loading() {
     <main
       id="main-content"
       aria-busy="true"
-      aria-label="Loading your workspace"
+      aria-label="กำลังโหลดพื้นที่บริการ"
       className="mx-auto max-w-7xl space-y-8 px-5 py-12"
     >
       <p role="status" className="text-zinc-400">
-        Loading your workspace…
+        กำลังโหลดพื้นที่บริการ…
       </p>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (

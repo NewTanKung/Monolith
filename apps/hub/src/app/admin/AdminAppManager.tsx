@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Wrench } from "lucide-react";
+import { ServiceTokens } from "@/components/admin/ServiceTokens";
+import { ApiError } from "@/lib/client-api";
 import { IconRenderer } from "@/components/common/IconRenderer";
 interface AppRecord {
   id: string;
@@ -13,11 +15,13 @@ interface AppRecord {
   icon: string;
   color: string;
   minRole: "GUEST" | "MEMBER" | "ADMIN";
+  mode: "LINK" | "SSO";
   isFeatured: boolean;
   orderIndex: number;
 }
 type Form = Omit<AppRecord, "id">;
 const blank: Form = {
+  mode: "LINK",
   name: "",
   slug: "",
   description: "",
@@ -50,7 +54,10 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [tokenApp, setTokenApp] = useState<AppRecord | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   function field<K extends keyof Form>(key: K, value: Form[K]) {
+    setFieldErrors((p) => ({ ...p, [key]: "" }));
     setForm((f) => ({ ...f, [key]: value }));
   }
   function edit(app?: AppRecord) {
@@ -58,6 +65,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
     setForm(
       app
         ? {
+            mode: app.mode,
             name: app.name,
             slug: app.slug,
             description: app.description,
@@ -72,6 +80,8 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
           }
         : { ...blank },
     );
+    setTokenApp(null);
+    setFieldErrors({});
     setOpen(true);
     setError("");
     setNotice("");
@@ -87,7 +97,11 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
     );
     const result = await response.json();
     if (!response.ok)
-      throw new Error(result.error || "Unable to save changes.");
+      throw new ApiError(
+        result.error || "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+        result.code,
+        result.fields,
+      );
     return result;
   }
   async function save(event: React.FormEvent) {
@@ -108,9 +122,10 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
         ).sort((a, b) => a.orderIndex - b.orderIndex),
       );
       setOpen(false);
-      setNotice("Application saved.");
+      setNotice("บันทึกบริการแล้ว");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Please try again.");
+      if (e instanceof ApiError) setFieldErrors(e.fields);
+      setError(e instanceof Error ? e.message : "กรุณาลองใหม่");
     } finally {
       setBusy(false);
     }
@@ -118,7 +133,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
   async function change(app: AppRecord, remove = false) {
     if (
       busy ||
-      (remove && !confirm("Remove " + app.name + " from the registry?"))
+      (remove && !confirm("ลบ " + app.name + " ออกจากทะเบียนบริการ?"))
     )
       return;
     setBusy(true);
@@ -128,17 +143,17 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
       if (remove) {
         await request("DELETE", undefined, app.id);
         setApps((p) => p.filter((a) => a.id !== app.id));
-        setNotice("Application removed.");
+        setNotice("ลบบริการแล้ว");
       } else {
         const { app: updated } = await request("PUT", {
           id: app.id,
           status: app.status === "MAINTENANCE" ? "ONLINE" : "MAINTENANCE",
         });
         setApps((p) => p.map((a) => (a.id === updated.id ? updated : a)));
-        setNotice("Application status updated.");
+        setNotice("เปลี่ยนสถานะบริการแล้ว");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Please try again.");
+      setError(e instanceof Error ? e.message : "กรุณาลองใหม่");
     } finally {
       setBusy(false);
     }
@@ -147,9 +162,9 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Application registry</h2>
+          <h2 className="text-xl font-semibold">ทะเบียนบริการ</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Manage access, availability, and the apps in your ecosystem.
+            จัดการบริการ สิทธิ์ และการเชื่อมต่อของคุณ
           </p>
         </div>
         <button
@@ -158,7 +173,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
           className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold"
         >
           <Plus className="h-4 w-4" />
-          Register app
+          เพิ่มบริการ
         </button>
       </div>
       {error && (
@@ -174,14 +189,45 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
           {notice}
         </p>
       )}
+      {tokenApp && (
+        <>
+          <button
+            className="text-sm text-teal-200"
+            onClick={() => setTokenApp(null)}
+          >
+            ปิดการเชื่อมต่อ
+          </button>
+          <ServiceTokens
+            key={tokenApp.id}
+            appId={tokenApp.id}
+            name={tokenApp.name}
+          />
+        </>
+      )}
       {open && (
         <form onSubmit={save} className="liquid-glass rounded-2xl p-5 sm:p-7">
           <h3 className="mb-5 text-lg font-semibold">
-            {editing ? "Edit application" : "Register application"}
+            {editing ? "แก้ไขบริการ" : "เพิ่มบริการ"}
           </h3>
           <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">
+            <label className="form-label">
+              รูปแบบบริการ
+              <select
+                className="admin-input"
+                value={form.mode}
+                onChange={(e) => field("mode", e.target.value as Form["mode"])}
+              >
+                <option value="LINK">ลิงก์ทั่วไป</option>
+                <option value="SSO">เชื่อม SSO</option>
+              </select>
+            </label>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-name">Name</label>
+              <label htmlFor="app-name">ชื่อบริการ</label>
+              {fieldErrors.name && (
+                <p role="alert" className="text-xs text-rose-200">
+                  {fieldErrors.name}
+                </p>
+              )}
               <input
                 id="app-name"
                 className="admin-input"
@@ -192,7 +238,12 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               />
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-slug">Slug</label>
+              <label htmlFor="app-slug">ชื่อใน URL (slug)</label>
+              {fieldErrors.slug && (
+                <p role="alert" className="text-xs text-rose-200">
+                  {fieldErrors.slug}
+                </p>
+              )}
               <input
                 id="app-slug"
                 className="admin-input"
@@ -205,7 +256,12 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               />
             </div>
             <div className="space-y-2 text-sm text-zinc-300 sm:col-span-2">
-              <label htmlFor="app-url-or-local-path">URL or local path</label>
+              <label htmlFor="app-url-or-local-path">URL หรือ path ภายใน</label>
+              {fieldErrors.url && (
+                <p role="alert" className="text-xs text-rose-200">
+                  {fieldErrors.url}
+                </p>
+              )}
               <input
                 id="app-url-or-local-path"
                 className="admin-input"
@@ -217,7 +273,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               />
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-category">Category</label>
+              <label htmlFor="app-category">หมวดหมู่</label>
               <select
                 id="app-category"
                 className="admin-input"
@@ -232,7 +288,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               </select>
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-minimum-role">Minimum role</label>
+              <label htmlFor="app-minimum-role">สิทธิ์ขั้นต่ำ</label>
               <select
                 id="app-minimum-role"
                 className="admin-input"
@@ -247,7 +303,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               </select>
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-status">Status</label>
+              <label htmlFor="app-status">สถานะ</label>
               <select
                 id="app-status"
                 className="admin-input"
@@ -262,7 +318,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               </select>
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-display-order">Display order</label>
+              <label htmlFor="app-display-order">ลำดับการแสดง</label>
               <input
                 id="app-display-order"
                 className="admin-input"
@@ -275,33 +331,90 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               />
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-icon">Icon</label>
-              <input
-                id="app-icon"
-                className="admin-input"
-                required
-                maxLength={60}
-                value={form.icon}
-                onChange={(e) => field("icon", e.target.value)}
-              />
+              <p id="app-icon-label">ไอคอน</p>
+              <div
+                role="group"
+                aria-label="เลือกไอคอน"
+                className="flex flex-wrap gap-2"
+              >
+                {[
+                  "LayoutGrid",
+                  "Gamepad2",
+                  "Briefcase",
+                  "FileText",
+                  "HeartPulse",
+                  "Shield",
+                  "Sparkles",
+                  "Headphones",
+                  "KanbanSquare",
+                  "BarChart3",
+                ].map((icon) => (
+                  <button
+                    type="button"
+                    key={icon}
+                    aria-label={icon}
+                    aria-pressed={form.icon === icon}
+                    onClick={() => field("icon", icon)}
+                    className={
+                      "rounded-xl border p-3 " +
+                      (form.icon === icon
+                        ? "border-teal-200 bg-teal-200/10"
+                        : "border-white/10")
+                    }
+                  >
+                    <IconRenderer name={icon} className="h-5 w-5" />
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-2 text-sm text-zinc-300">
-              <label htmlFor="app-accent">Accent</label>
+              <label htmlFor="app-accent">สีไอคอน</label>
               <select
                 id="app-accent"
                 className="admin-input"
                 value={form.color}
                 onChange={(e) => field("color", e.target.value)}
               >
-                {gradients.map((v) => (
+                {gradients.map((v, index) => (
                   <option key={v} value={v}>
-                    {v.replace("from-", "").replace(" to-", " → ")}
+                    {
+                      [
+                        "คราม → ม่วง",
+                        "ฟ้า → น้ำเงิน",
+                        "ชมพู → บานเย็น",
+                        "เหลือง → ส้ม",
+                        "เขียว → เขียวอมฟ้า",
+                        "ม่วง → คราม",
+                        "ทอง → ส้ม",
+                        "น้ำเงิน → คราม",
+                        "ม่วงอ่อน → ม่วง",
+                        "ชมพู → ม่วง",
+                      ][index]
+                    }
                   </option>
                 ))}
               </select>
+              <div
+                className="mt-3 flex items-center gap-3"
+                aria-label="ตัวอย่างไอคอนบริการ"
+              >
+                <span
+                  className={"rounded-xl bg-gradient-to-br p-3 " + form.color}
+                >
+                  <IconRenderer name={form.icon} className="h-6 w-6" />
+                </span>
+                <span className="text-xs text-zinc-400">
+                  {form.name || "บริการของคุณ"}
+                </span>
+              </div>
             </div>
             <div className="space-y-2 text-sm text-zinc-300 sm:col-span-2">
-              <label htmlFor="app-description">Description</label>
+              <label htmlFor="app-description">รายละเอียด</label>
+              {fieldErrors.description && (
+                <p role="alert" className="text-xs text-rose-200">
+                  {fieldErrors.description}
+                </p>
+              )}
               <textarea
                 id="app-description"
                 className="admin-input"
@@ -317,7 +430,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                 checked={form.isFeatured}
                 onChange={(e) => field("isFeatured", e.target.checked)}
               />
-              Featured application
+              แสดงเป็นบริการแนะนำ
             </label>
           </fieldset>
           <div className="mt-6 flex justify-end gap-3">
@@ -327,18 +440,23 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               onClick={() => setOpen(false)}
               className="rounded-xl px-4 py-3 text-sm text-zinc-300"
             >
-              Cancel
+              ยกเลิก
             </button>
             <button
               disabled={busy}
               className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold disabled:opacity-50"
             >
-              {busy ? "Saving…" : "Save application"}
+              {busy ? "กำลังบันทึก…" : "บันทึกบริการ"}
             </button>
           </div>
         </form>
       )}
 
+      {!apps.length && (
+        <div className="account-section md:hidden">
+          <p>ยังไม่มีบริการ เพิ่มบริการแรกของคุณเพื่อเริ่มใช้งาน</p>
+        </div>
+      )}
       <div className="space-y-3 md:hidden">
         {apps.map((app) => (
           <article
@@ -364,10 +482,24 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
               <p className="text-xs text-zinc-400">
                 {app.minRole} / {app.status}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {app.mode === "SSO" && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="secondary-button"
+                    aria-label={"เชื่อมต่อ " + app.name}
+                    onClick={() => {
+                      setOpen(false);
+                      setTokenApp(app);
+                    }}
+                  >
+                    เชื่อมต่อ
+                  </button>
+                )}
                 <button
                   disabled={busy}
-                  aria-label={"Edit " + app.name}
+                  aria-label={"แก้ไข " + app.name}
                   onClick={() => edit(app)}
                   className="rounded-lg bg-white/5 p-3"
                 >
@@ -376,7 +508,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                 <button
                   disabled={busy || app.status === "DISABLED"}
                   aria-label={
-                    (app.status === "MAINTENANCE" ? "Resume " : "Maintain ") +
+                    (app.status === "MAINTENANCE" ? "เปิดใช้ " : "ปรับปรุง ") +
                     app.name
                   }
                   onClick={() => change(app)}
@@ -386,7 +518,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                 </button>
                 <button
                   disabled={busy}
-                  aria-label={"Delete " + app.name}
+                  aria-label={"ลบ " + app.name}
                   onClick={() => change(app, true)}
                   className="rounded-lg bg-white/5 p-3 text-rose-300"
                 >
@@ -399,12 +531,10 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
       </div>
       <div className="hidden overflow-x-auto rounded-2xl border border-white/10 md:block">
         <table className="w-full text-left text-sm">
-          <caption className="sr-only">
-            Registered applications and access settings
-          </caption>
+          <caption className="sr-only">บริการและการตั้งค่าสิทธิ์</caption>
           <thead className="bg-white/5 text-xs uppercase tracking-wide text-zinc-400">
             <tr>
-              {["Application", "Access", "Status", "Actions"].map((v) => (
+              {["บริการ", "สิทธิ์", "สถานะ", "จัดการ"].map((v) => (
                 <th key={v} scope="col" className="px-5 py-4">
                   {v}
                 </th>
@@ -436,10 +566,24 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                   {app.status}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {app.mode === "SSO" && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="secondary-button"
+                        aria-label={"เชื่อมต่อ " + app.name}
+                        onClick={() => {
+                          setOpen(false);
+                          setTokenApp(app);
+                        }}
+                      >
+                        เชื่อมต่อ
+                      </button>
+                    )}
                     <button
                       disabled={busy}
-                      aria-label={"Edit " + app.name}
+                      aria-label={"แก้ไข " + app.name}
                       onClick={() => edit(app)}
                       className="rounded-lg p-2 hover:bg-white/10 disabled:opacity-40"
                     >
@@ -449,8 +593,8 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                       disabled={busy || app.status === "DISABLED"}
                       aria-label={
                         (app.status === "MAINTENANCE"
-                          ? "Resume "
-                          : "Maintain ") + app.name
+                          ? "เปิดใช้ "
+                          : "ปรับปรุง ") + app.name
                       }
                       onClick={() => change(app)}
                       className="rounded-lg p-2 text-amber-300 hover:bg-white/10 disabled:opacity-40"
@@ -459,7 +603,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
                     </button>
                     <button
                       disabled={busy}
-                      aria-label={"Delete " + app.name}
+                      aria-label={"ลบ " + app.name}
                       onClick={() => change(app, true)}
                       className="rounded-lg p-2 text-rose-300 hover:bg-white/10 disabled:opacity-40"
                     >
@@ -473,7 +617,7 @@ export function AdminAppManager({ initialApps }: { initialApps: AppRecord[] }) {
         </table>
         {!apps.length && (
           <p className="p-10 text-center text-zinc-400">
-            Register your first application to get started.
+            ยังไม่มีบริการ เพิ่มบริการแรกของคุณเพื่อเริ่มใช้งาน
           </p>
         )}
       </div>

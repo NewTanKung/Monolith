@@ -2,6 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+.account-shell {
+  display: grid;
+  min-height: 85dvh;
+  place-items: center;
+  padding: 40px 20px;
+}
+.account-panel {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 26px;
+  padding: 30px;
+}
+.account-section {
+  border: 1px solid #ffffff1c;
+  border-radius: 18px;
+  background: #ffffff04;
+  padding: 22px;
+}
+.account-section h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #d8e4e5;
+}
+.form-error,
+.form-success {
+  margin: 16px 0;
+  border: 1px solid #fda4af55;
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: #fda4af0a;
+  color: #fecdd3;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.form-success {
+  border-color: #6ee7b755;
+  background: #6ee7b708;
+  color: #a7f3d0;
+}
+.primary-button,
+.secondary-button {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 150ms;
+}
+.primary-button {
+  background: #a4e4d8;
+  color: #0b2729;
+  border: 1px solid #bbf7e7;
+}
+.primary-button:hover {
+  background: #c0f2e8;
+}
+.secondary-button {
+  border: 1px solid #ffffff25;
+  background: #ffffff06;
+  color: #dcebe9;
+}
+.secondary-button:hover {
+  background: #ffffff10;
+}
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.45;
+}
+@media (max-width: 480px) {
+  .account-panel {
+    padding: 24px 20px;
+  }
+  .account-section {
+    padding: 18px;
+  }
+}
+
 /* Compact launcher: quiet background, glass controls, one primary search. */
 .launcher-page {
   position: relative;

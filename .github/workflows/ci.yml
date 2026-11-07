@@ -8,6 +8,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     services:
+      mailpit:
+        image: axllent/mailpit:v1.33.0
+        ports:
+          - 8025:8025
       postgres:
         image: postgres:16-alpine
         env:
@@ -27,6 +31,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run setup
+      - run: curl --fail --retry 10 --retry-delay 1 --retry-connrefused http://127.0.0.1:8025/livez
       - run: npm run generate
       - run: npm run db:migrate
       - run: npm run db:seed

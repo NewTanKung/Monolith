@@ -15,15 +15,15 @@ export function HeroSection({
 }) {
   return (
     <section className="launcher-hero" aria-labelledby="launcher-title">
-      <p className="launcher-eyebrow">YOUR EVERYDAY, CONNECTED</p>
+      <p className="launcher-eyebrow">ทุกบริการ เชื่อมถึงกัน</p>
       <h1 id="launcher-title" className="launcher-wordmark">
         <Layers aria-hidden="true" />
         Monolith<span>.</span>
       </h1>
       <p className="launcher-greeting">
         {userName
-          ? `Good to see you, ${userName}.`
-          : "A little less searching. A lot more doing."}
+          ? `ยินดีต้อนรับ ${userName}`
+          : "ค้นหาง่าย เปิดใช้ไว ด้วยบัญชีเดียว"}
       </p>
       <div className="launcher-search liquid-glass">
         <ShineBorder
@@ -36,13 +36,13 @@ export function HeroSection({
           aria-hidden="true"
         />
         <label className="sr-only" htmlFor="service-search">
-          Search services
+          ค้นหาบริการ
         </label>
         <input
           id="service-search"
           type="search"
           autoComplete="off"
-          placeholder="Where do you want to go?"
+          placeholder="ค้นหาบริการที่ต้องการใช้…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
         />
@@ -50,7 +50,7 @@ export function HeroSection({
           <button
             type="button"
             onClick={() => onQueryChange("")}
-            aria-label="Clear search"
+            aria-label="ล้างคำค้นหา"
             className="search-clear"
           >
             <X size={16} />
@@ -64,10 +64,10 @@ export function HeroSection({
       <div className="launcher-context">
         <span className="availability-dot" />
         <span>
-          {onlineApps} of {totalApps} services available
+          {onlineApps} จาก {totalApps} บริการเปิดให้ใช้
         </span>
         <span className="context-divider">/</span>
-        <span>One account. Every space.</span>
+        <span>บัญชีเดียว ทุกบริการ</span>
       </div>
     </section>
   );

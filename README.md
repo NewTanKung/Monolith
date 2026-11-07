@@ -1,169 +1,96 @@
-# Monolith Hub
+# Monolith
 
-A shared workspace for lifestyle, work, and gaming applications. The monorepo contains the Next.js Monolith Hub and a server-side SSO SDK.
+Hub ภาษาไทยสำหรับรวมบริการ บัญชีสมาชิก และ SSO บน subdomain ที่คุณควบคุม ใช้ Next.js, PostgreSQL/Prisma และ Cloudflare Workers ผ่าน OpenNext
 
-## Requirements
+## เริ่มใช้งาน local
 
-- Node.js 22.13 LTS or Node.js 24 or later
-- npm
-- PostgreSQL 16 or later (Docker Compose configuration included)
-
-## Local setup
-
-Run commands from the repository root:
+ต้องใช้ Node.js 22.13+ หรือ 24+, npm และ Docker Desktop ที่เปิดทำงานแล้ว
 
 ```sh
 npm ci
 npm run setup
 docker compose up -d --wait
 npm run db:migrate
-npm run db:seed
 npm run dev
 ```
 
-Open the Hub at http://localhost:3000.
+Hub: http://localhost:3000 · กล่องอีเมลทดสอบ Mailpit: http://localhost:8025
 
-`setup` generates random JWT and service credentials and writes root `.env` and `apps/hub/.env.local`. It preserves existing environment files. If files already exist, configure them using the adjacent `.env.example` templates.
+ฐานข้อมูลเดิมต้องอ่าน [ขั้นตอนอัปเกรด](docs/upgrading.md) ก่อนรัน migration ครั้งแรก ห้าม reset ฐานข้อมูลที่มีข้อมูลใช้งานจริง
 
-Prisma commands read the root `.env`. Next.js reads `apps/hub/.env.local`. Keep the database URL and shared signing key consistent across the appropriate files.
+`setup` เติมเฉพาะ env ที่ยังไม่มี และไม่เปลี่ยน secret เดิม Root `.env` ใช้กับ Prisma และ `apps/hub/.env.local` ใช้กับ Hub; `DATABASE_URL` ต้องตรงกัน Seed ไม่สร้างบริการตัวอย่าง บริการจริงเพิ่มจาก `/admin`
 
-The service registry starts empty. Add your real services through `/admin` after creating an administrator. The seed command does not add example services or change existing services, accounts, or notifications.
+## ผู้ใช้และ Admin
 
-## Create the administrator
+สมาชิกสมัครด้วยอีเมลและรหัสผ่าน ยืนยันอีเมลจากกล่องจดหมายก่อนเข้าสู่ระบบ บน local อีเมลจะอยู่ใน Mailpit ไม่ได้ส่งถึงอินเทอร์เน็ต
 
-Public registration always creates a Member. Provision administrators explicitly from a trusted terminal:
-
-PowerShell:
+สร้าง Admin ผ่าน PowerShell ในโฟลเดอร์โปรเจกต์:
 
 ```powershell
 $env:ADMIN_EMAIL = "admin@example.com"
-$env:ADMIN_PASSWORD = "<a unique password of at least 12 characters>"
+$env:ADMIN_PASSWORD = "<รหัสผ่านใหม่อย่างน้อย 12 ตัวอักษร>"
 npm run admin:create
 Remove-Item Env:ADMIN_PASSWORD
+npm run admin:verify
+Remove-Item Env:ADMIN_EMAIL
 ```
 
-POSIX shell:
+เปิดอีเมลแล้วกดยืนยัน จากนั้นล็อกอินและเข้า `/admin` คำสั่งไม่เขียนทับหรือเลื่อนสิทธิ์บัญชีที่มีอยู่ หากเป็น Admin เดิมให้รันเฉพาะ `admin:verify` โดยตั้ง `ADMIN_EMAIL` ให้ตรงบัญชี
 
-```sh
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='<unique password>' npm run admin:create
-```
+หน้าบัญชี `/account` ใช้แก้ชื่อ เปลี่ยนอีเมล เปลี่ยนรหัสผ่าน และออกจากอุปกรณ์ต่าง ๆ การเปลี่ยนอีเมลจะมีผลเมื่อยืนยันอีเมลใหม่แล้วเท่านั้น การเปลี่ยนรหัสผ่านหรือกู้รหัสผ่านจะยกเลิก session ทั้งหมด
 
-The command refuses to overwrite or promote an existing account. An administrator account is provisioned explicitly.
+## จัดการบริการ
 
-## Commands
+- **ลิงก์ทั่วไป:** ชี้ URL หรือ path ที่ใช้งานจริง
+- **SSO:** ใช้ HTTPS บน subdomain ภายใต้ `SESSION_COOKIE_DOMAIN` ของคุณ แต่ละบริการสร้าง Service Token และกำหนดสิทธิ์ได้จาก Admin
+- สมาชิกเข้าใช้ตามระดับ Guest → Member → Admin บริการ Disabled ไม่เปิดให้เข้าถึง ส่วน Maintenance แสดงหน้าปรับปรุง
+- การเพิ่มลิงก์ไม่ทำให้บริการปลายทางรองรับ SSO อัตโนมัติ ต้องติดตั้ง SDK ฝั่ง server ตาม [คู่มือเชื่อมบริการ](docs/integrations.md)
+- สิทธิ์และสถานะบัญชีตรวจจาก Hub ล่าสุด ไม่ให้บริการเก็บ signing key กลาง
 
-| Command                                   | Purpose                                                         |
-| ----------------------------------------- | --------------------------------------------------------------- |
-| `npm run dev`                             | Start the Hub in development mode                               |
-| `npm run dev:hub`                         | Start the Hub development server                                |
-| `npm run build`                           | Build SDK and production Hub                                    |
-| `npm run start --workspace=@monolith/hub` | Start production Hub                                            |
-| `npm run lint`                            | ESLint                                                          |
-| `npm run typecheck`                       | Generate Prisma client and check workspaces                     |
-| `npm test`                                | Authentication, validation, request-policy, and singleton tests |
-| `npm run check`                           | Lint, types, unit tests, and production builds                  |
-| `npm run test:e2e`                        | Desktop and mobile browser/integration tests                    |
-| `npm run db:migrate`                      | Apply committed SQL migrations                                  |
-| `npm run db:push`                         | Synchronize schema during disposable local development          |
-| `npm run db:seed`                         | No default services; preserve existing data                     |
-| `npm run admin:create`                    | Provision an administrator                                      |
+หน้า Admin มีส่วนบริการ สมาชิก การตั้งค่ารับสมัคร ความพร้อม และประวัติการจัดการ ระบบป้องกันการระงับหรือลดสิทธิ์ Admin ที่ยืนยันอีเมลแล้วคนสุดท้าย
 
-For browser tests, prepare the local database and build the app first, then run:
+## คำสั่ง
 
-```sh
-npx playwright install chromium
-npm run test:e2e
-```
+| คำสั่ง                        | หน้าที่                                          |
+| ----------------------------- | ------------------------------------------------ |
+| `npm run setup`               | เติมค่า env local ที่ขาด                         |
+| `npm run dev`                 | ตรวจ env/ฐานข้อมูล/migration แล้วเปิด dev server |
+| `npm run db:migrate`          | ใช้ migration ที่ commit แล้ว                    |
+| `npm run db:seed`             | ไม่เพิ่มบริการ และไม่แก้ข้อมูลที่มีอยู่          |
+| `npm run admin:create`        | สร้าง Admin ใหม่โดยไม่เขียนทับบัญชีเดิม          |
+| `npm run admin:verify`        | ส่งลิงก์ยืนยันอีเมลให้ Admin เดิมหรือใหม่        |
+| `npm run maintenance:cleanup` | ล้าง session/token/counter ที่หมดอายุ            |
+| `npm run check`               | lint, types, unit tests และ production build     |
+| `npm run test:e2e`            | browser/integration tests บน desktop และ mobile  |
+| `npm run cf:build`            | สร้าง Cloudflare Worker                          |
+| `npm run cf:check`            | Wrangler dry run ไม่ deploy จริง                 |
+| `npm run test:e2e:workers`    | ทดสอบชุดเดียวกันบน Workers preview               |
 
-The suite starts production servers automatically. To use an installed Chrome/Edge browser locally, set `PLAYWRIGHT_CHANNEL=chrome` or `msedge`. Test fixtures use unique identifiers and remove only the records they create. Run against a dedicated development/test database.
+## ทดสอบ
 
-## Architecture
+ใช้ฐานข้อมูลทดสอบที่แยกจากข้อมูลส่วนตัว/production และเปิด Mailpit ก่อน `npm run build` แล้วรัน `npx playwright install chromium` และ `npm run test:e2e` หากใช้ Chrome ที่ติดตั้งแล้ว ตั้ง `PLAYWRIGHT_CHANNEL=chrome`
+
+ชุดทดสอบมี proxy เฉพาะ loopback สำหรับ `hub.monolith.test` และ `service.monolith.test` ไม่แก้ OS hosts และไม่ใช้ DNS ภายนอก ทดสอบด้วย `APP_ENV=test` บน HTTP เฉพาะ test domain นี้เท่านั้น Production ต้องใช้ HTTPS ทุกบริการ SSO
+
+Fixtures สร้างชื่อเฉพาะแต่ละรอบและล้างเฉพาะข้อมูลของตัวเอง ไม่ seed บริการกลับเข้า registry
+
+## ขึ้นใช้งานจริง
+
+ดู [Cloudflare และ Resend](docs/cloudflare.md), [การย้ายข้อมูลและสำรอง](docs/upgrading.md) และ [Service SDK](docs/integrations.md)
+
+ตั้ง `APP_ENV=production` พร้อมโดเมนจริง PostgreSQL ที่ Workers เข้าถึงได้ และ Resend sender ที่ยืนยันแล้ว การทดสอบ local ผ่านไม่ได้หมายความว่าตั้งทรัพยากร production หรือส่งอีเมลจริงสำเร็จแล้ว ต้องทำ smoke test หลังตั้งค่า
+
+Health endpoints: `/api/health/live` ตรวจ process และ `/api/health/ready` คืนเพียง `{ ok }` พร้อม 200/503 โดยไม่เปิดเผย secret Admin เห็นรายการตั้งค่าที่ต้องตรวจได้จากการตั้งค่า
+
+## โครงสร้าง
 
 ```text
-apps/hub                 Portal, account APIs, app registry, notifications
-packages/auth-client     JWT signing/verification, roles, cookie parsing
-scripts                  Local setup and administrator provisioning
-tests                    Unit/security tests and browser integration tests
-.github/workflows        CI with PostgreSQL, checks, and browser tests
+apps/hub              Hub, account APIs, Admin, registry, notifications
+packages/auth-client  types และ server-side Service SDK
+scripts               setup, preflight, bootstrap, maintenance
+tests                 unit, browser tests, isolated integration fixtures
 ```
 
-- Guests see Guest applications. Members see Guest and Member applications. Administrators see all permitted applications.
-- All Hub launchers route through `/apps/:slug/launch`. The server rechecks current role, disabled status, maintenance status, and the destination URL.
-- Maintenance redirects to the app status page. It controls launching from the Hub; separate services must enforce their own authorization and maintenance policy at its own endpoints.
-- Favorites have a single shared source of state. Failed saves remain visible as errors rather than appearing saved.
-- Search supports Ctrl/Cmd+K, arrow keys, Enter, Escape, focus containment, and category selection.
-- Notifications refresh when opened and every 30 seconds while the document is visible.
+SDK JWT รุ่นเดิมคง export ไว้สำหรับ compatibility ของแพ็กเกจ แต่ Hub รุ่นนี้ไม่รับ JWT cookie เดิมหรือ `MONOLITH_SERVICE_TOKENS` แบบ JSON map อีกต่อไป ให้ล็อกอินใหม่และออก token รายบริการแทน
 
-## SSO configuration
-
-Set `MONOLITH_JWT_SECRET` to at least 32 random bytes on every trusted server. There is no fallback key. Set `SESSION_COOKIE_DOMAIN=.example.com` on the Hub to share the HttpOnly cookie with trusted subdomains. Leave it blank for localhost.
-
-Production cookies use Secure, HttpOnly, SameSite=Lax, and a seven-day lifetime. Tokens require the expected algorithm, issuer, audience, subject, role, issue time, and expiry.
-
-Hub requests resolve the token subject against the database, so deleted users and updated roles take effect immediately. Offline SDK consumers validate a signed snapshot until its expiry and should perform an authoritative profile check when immediate revocation is required.
-
-All servers holding the shared HMAC key are trusted to mint sessions. Keep this SDK and the key on trusted servers; never expose the key through `NEXT_PUBLIC_*` variables, browser bundles, or untrusted sub-apps. Use an asymmetric identity provider if sub-app servers must not share session-signing authority.
-
-Example server integration:
-
-```ts
-import { verifyHubSession, hasRequiredRole } from "@monolith/auth-client";
-
-const user = await verifyHubSession(request.headers.get("cookie"));
-if (!user || !hasRequiredRole(user.role, "MEMBER")) {
-  return new Response("Unauthorized", { status: 401 });
-}
-```
-
-The SDK exports compiled JavaScript and TypeScript declarations. Build it with `npm run build:packages` before using it outside the Next.js workspaces.
-
-## Notification integration
-
-Set a separate random service token for each trusted application in the Hub environment:
-
-```dotenv
-MONOLITH_SERVICE_TOKENS='{"External App":"<random credential of at least 32 bytes>"}'
-```
-
-External servers send authenticated requests to the Hub using Bearer tokens:
-
-```ts
-await fetch(new URL("/api/notifications", process.env.HUB_URL), {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + process.env.MONOLITH_SERVICE_TOKEN,
-  },
-  body: JSON.stringify({
-    userId,
-    title: "Task assigned",
-    message: "A new task is ready.",
-    linkUrl: "https://work.example.com/tasks",
-  }),
-});
-```
-
-Service identity comes from the configured credential. User-authenticated requests may notify only their own account, and their source is labeled Monolith. Notification links accept only HTTP(S) URLs or local paths. All read/update operations remain scoped to the current account.
-
-## Cloudflare Workers
-
-For Cloudflare, follow [docs/cloudflare.md](docs/cloudflare.md). The Hub has OpenNext/Wrangler configurations, explicit build/deploy commands, and Workers-compatible PostgreSQL access.
-
-## Deployment
-
-1. Create a PostgreSQL database and set production environment variables on each server.
-2. Set `HUB_URL` to the externally visible HTTPS origin. Configure the cookie domain for your trusted subdomains.
-3. Generate fresh signing/service credentials. Provision the administrator and add your real service destinations through `/admin`.
-4. Run `npm ci`, `npm run db:migrate`, and `npm run build`.
-5. Start each production workspace behind your HTTPS reverse proxy.
-6. Set `ALLOW_REGISTRATION=false` if registration should be closed.
-
-Login and notification rate limits use shared PostgreSQL counters. Registration also has a shared traffic ceiling. Set stricter IP limits at your ingress when exposing the service publicly; the application does not trust arbitrary forwarded-IP headers.
-
-The initial migration is for new databases. For an existing installation whose schema already matches the original repository, back up the database and baseline the original tables before applying schema changes. Do not apply an initial create-tables migration blindly to a populated database. See `docs/upgrading.md`.
-
-Dependency overrides upgrade Prisma's transitive `deepmerge-ts` and the lint tools' `minimatch` to patched versions. Keep these overrides until the upstream dependency ranges include the fixes, and verify updates with `npm run check`.
-
-The provided Docker database password is for localhost development only. Production configuration must use its own database credentials.
-
-MIT License.
+MIT License. ดู THIRD_PARTY_NOTICES.md สำหรับ Magic UI

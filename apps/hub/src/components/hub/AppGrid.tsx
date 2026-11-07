@@ -6,12 +6,14 @@ export function AppGrid({
   initialApps,
   selectedCategory = "ALL",
   signedIn,
+  isAdmin = false,
   query = "",
   onClearSearch,
 }: {
   initialApps: AppItemData[];
   selectedCategory?: string;
   signedIn: boolean;
+  isAdmin?: boolean;
   query?: string;
   onClearSearch?: () => void;
 }) {
@@ -23,7 +25,7 @@ export function AppGrid({
   useEffect(() => setActiveCategory(selectedCategory), [selectedCategory]);
   async function toggleFavorite(appId: string) {
     if (!signedIn) {
-      setError("Sign in to save your favorites.");
+      setError("กรุณาเข้าสู่ระบบเพื่อบันทึกรายการโปรด");
       return;
     }
     if (pending.includes(appId)) return;
@@ -38,14 +40,14 @@ export function AppGrid({
       });
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error || "Unable to update favorite.");
+        throw new Error(data.error || "บันทึกรายการโปรดไม่สำเร็จ");
       setApps((p) =>
         p.map((a) =>
           a.id === appId ? { ...a, isFavorite: data.isFavorite } : a,
         ),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Please try again.");
+      setError(e instanceof Error ? e.message : "กรุณาลองใหม่");
     } finally {
       setPending((p) => p.filter((id) => id !== appId));
     }
@@ -77,7 +79,7 @@ export function AppGrid({
     );
   }
   return (
-    <section className="launcher-services" aria-label="Services">
+    <section className="launcher-services" aria-label="บริการ">
       <CategoryTabs
         currentCategory={activeCategory}
         onSelectCategory={setActiveCategory}
@@ -94,13 +96,13 @@ export function AppGrid({
       <div className="services-heading">
         <h2>
           {query.trim()
-            ? "Search results"
+            ? "ผลการค้นหา"
             : activeCategory === "FAVORITES"
-              ? "Your favorites"
-              : "Your services"}
+              ? "รายการโปรดของคุณ"
+              : "บริการของคุณ"}
         </h2>
         <span role="status" aria-live="polite">
-          {filtered.length} {filtered.length === 1 ? "service" : "services"}
+          {filtered.length} {"บริการ"}
         </span>
       </div>
       {filtered.length ? (
@@ -109,18 +111,23 @@ export function AppGrid({
         <div className="services-empty liquid-glass">
           <p>
             {query.trim()
-              ? `No services match “${query.trim()}”.`
+              ? `ไม่พบบริการที่ตรงกับ “${query.trim()}”`
               : activeCategory === "FAVORITES"
-                ? "Your favorites will appear here. Pin an app to get started."
-                : "No applications in this category yet."}
+                ? "ยังไม่มีรายการโปรด กดดาวบนบริการเพื่อบันทึกไว้ที่นี่"
+                : "ยังไม่มีบริการในหมวดนี้"}
           </p>
+          {isAdmin && !query.trim() && (
+            <a href="/admin" className="primary-button mt-4 inline-block">
+              เพิ่มบริการแรก
+            </a>
+          )}
           {query.trim() && (
             <button
               type="button"
               onClick={onClearSearch}
               className="mt-4 text-sm text-teal-200 underline underline-offset-4"
             >
-              Clear search
+              ล้างคำค้นหา
             </button>
           )}
         </div>

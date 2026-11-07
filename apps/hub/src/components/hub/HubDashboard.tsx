@@ -10,10 +10,14 @@ export function HubDashboard({
   user,
   apps,
   notifications,
+  unreadCount,
+  nextCursor,
 }: {
   user: HubUser | null;
   apps: AppItemData[];
   notifications: NotificationItem[];
+  unreadCount: number;
+  nextCursor: string | null;
 }) {
   const [category, setCategory] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -25,6 +29,8 @@ export function HubDashboard({
         <div className="launcher-grain" />
       </div>
       <Navbar
+        unreadCount={unreadCount}
+        nextCursor={nextCursor}
         user={user}
         apps={apps}
         notifications={notifications}
@@ -46,6 +52,7 @@ export function HubDashboard({
         initialApps={apps}
         selectedCategory={category}
         signedIn={!!user}
+        isAdmin={user?.role === "ADMIN"}
       />
     </main>
   );

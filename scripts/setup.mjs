@@ -1,34 +1,39 @@
 import fs from "node:fs";
-import crypto from "node:crypto";
-
-const destinations = [".env", "apps/hub/.env.local"];
-
-if (destinations.some((p) => fs.existsSync(p))) {
-  console.log(
-    "Environment files already exist. Keep them in sync using the .env.example files.",
+import path from "node:path";
+import { parseEnv } from "node:util";
+export function fillEnvironment(file, defaults) {
+  const original = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  const existing = parseEnv(original);
+  const missing = Object.entries(defaults).filter(
+    ([key]) => !(key in existing),
   );
-  process.exit(0);
+  if (missing.length) {
+    fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
+    fs.appendFileSync(
+      file,
+      (original && !original.endsWith("\n") ? "\n" : "") +
+        missing
+          .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+          .join("\n") +
+        "\n",
+    );
+  }
+  return { ...defaults, ...existing };
 }
-
-const jwt = crypto.randomBytes(48).toString("base64url");
-const token = crypto.randomBytes(48).toString("base64url");
-const shared =
-  "MONOLITH_JWT_SECRET=" + jwt + "\nHUB_URL=http://localhost:3000\n";
-
-fs.writeFileSync(
-  ".env",
-  'DATABASE_URL="postgresql://monolith:monolith_local_dev@localhost:55432/monolith"\n',
-);
-
-fs.writeFileSync(
-  "apps/hub/.env.local",
-  fs.readFileSync(".env") +
-    shared +
-    'SESSION_COOKIE_DOMAIN=\nALLOW_REGISTRATION=true\nMONOLITH_SERVICE_TOKENS=\'{"External Service":"' +
-    token +
-    "\"}'\n",
-);
-
+const database = fillEnvironment(".env", {
+  DATABASE_URL:
+    "postgresql://monolith:monolith_local_dev@localhost:55432/monolith",
+});
+fillEnvironment("apps/hub/.env.local", {
+  DATABASE_URL: database.DATABASE_URL,
+  APP_ENV: "development",
+  HUB_URL: "http://localhost:3000",
+  SESSION_COOKIE_DOMAIN: "",
+  ALLOW_REGISTRATION: "true",
+  MAIL_PROVIDER: "mailpit",
+  MAILPIT_URL: "http://127.0.0.1:8025",
+  MAIL_FROM: "Monolith <noreply@monolith.test>",
+});
 console.log(
-  "Created local environment files with random signing and service credentials.",
+  "เติมค่า local ที่ขาดแล้ว เก็บค่าเดิมทั้งหมดไว้ เริ่มฐานข้อมูลและอีเมลด้วย docker compose up -d --wait",
 );

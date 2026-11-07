@@ -48,14 +48,14 @@ export function CommandPalette({
       onClick={(e) => {
         if (e.target === dialog.current) onClose();
       }}
-      aria-label="Search applications"
+      aria-label="ค้นหาแอป"
       className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-white/15 bg-[#111522] p-0 text-white shadow-2xl backdrop:bg-black/75"
     >
       <div className="flex items-center gap-3 border-b border-white/10 p-4">
         <Search className="h-5 w-5 text-indigo-300" />
         <input
           autoFocus
-          aria-label="Search applications"
+          aria-label="ค้นหาแอป"
           role="combobox"
           aria-expanded="true"
           aria-controls="app-results"
@@ -85,11 +85,11 @@ export function CommandPalette({
               window.location.assign(results[active].url);
             }
           }}
-          placeholder="Search your applications…"
+          placeholder="ค้นหาบริการ…"
           className="min-w-0 flex-1 bg-transparent text-base outline-none"
         />
         <button
-          aria-label="Close search"
+          aria-label="ปิดการค้นหา"
           onClick={onClose}
           className="rounded-lg p-2 text-zinc-400"
         >
@@ -115,7 +115,7 @@ export function CommandPalette({
       <div
         id="app-results"
         role="listbox"
-        aria-label="Applications"
+        aria-label="บริการs"
         className="max-h-[55dvh] overflow-y-auto p-2"
       >
         {results.map((app, i) => (
@@ -141,7 +141,7 @@ export function CommandPalette({
               <span className="block font-medium break-words">{app.name}</span>
               <span className="block truncate text-xs text-zinc-400">
                 {app.status === "MAINTENANCE"
-                  ? "Maintenance — view status"
+                  ? "กำลังปรับปรุง — ดูรายละเอียด"
                   : app.description}
               </span>
             </span>
@@ -149,12 +149,12 @@ export function CommandPalette({
         ))}
         {!results.length && (
           <p role="status" className="p-10 text-center text-sm text-zinc-400">
-            No matching applications.
+            ไม่พบบริการที่ตรงกับคำค้นหา
           </p>
         )}
       </div>
       <p className="border-t border-white/10 px-4 py-3 text-xs text-zinc-500">
-        ↑ ↓ to navigate · Enter to open · Esc to close
+        ↑ ↓ เลือก · Enter เปิด · Esc ปิด
       </p>
     </dialog>
   );

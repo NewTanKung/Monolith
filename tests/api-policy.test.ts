@@ -69,7 +69,7 @@ test("cross-site browser writes are rejected", () => {
           headers: { origin: "https://attacker.test" },
         }),
       ),
-    /origin/,
+    { status: 403, code: "INVALID_ORIGIN" },
   );
   assert.doesNotThrow(() =>
     assertSameOrigin(
@@ -88,7 +88,7 @@ test("invalid JSON and oversized bodies have controlled failures", async () => {
         body: "{",
       }),
     ),
-    /Invalid JSON/,
+    { status: 400, code: "INVALID_JSON" },
   );
   await assert.rejects(
     jsonBody(
@@ -98,32 +98,26 @@ test("invalid JSON and oversized bodies have controlled failures", async () => {
         body: "x".repeat(17000),
       }),
     ),
-    /too large/,
+    { status: 413, code: "PAYLOAD_TOO_LARGE" },
   );
 });
-test("service identity comes from configured credentials, never the submitted app name", () => {
-  process.env.MONOLITH_SERVICE_TOKENS = JSON.stringify({
-    "Cyber Arena": "s".repeat(40),
-  });
-  assert.equal(notificationService(new Request("http://local.test")), null);
-  assert.throws(
-    () =>
-      notificationService(
-        new Request("http://local.test", {
-          headers: { authorization: "Bearer invalid" },
-        }),
-      ),
-    /credentials/,
-  );
+test("legacy shared tokens are rejected and missing service credentials remain absent", async () => {
   assert.equal(
+    await notificationService(new Request("http://local.test")),
+    null,
+  );
+  await assert.rejects(
     notificationService(
       new Request("http://local.test", {
-        headers: { authorization: "Bearer " + "s".repeat(40) },
+        headers: { authorization: "Bearer old-shared-token" },
       }),
     ),
-    "Cyber Arena",
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      error.status === 401,
   );
-  delete process.env.MONOLITH_SERVICE_TOKENS;
 });
 test("Prisma is reused for repeated production accesses", async () => {
   const previous = process.env.NODE_ENV;

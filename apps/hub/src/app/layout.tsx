@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Monolith Hub - Lifestyle, Work & Game Ecosystem",
-  description:
-    "Centralized App Launcher and Portal with Seamless Single Sign-On and iOS LiquidGlass Design",
+  title: "Monolith — ทุกบริการในบัญชีเดียว",
+  description: "รวมบริการและเครื่องมือของคุณ พร้อมบัญชีเดียวสำหรับทุกพื้นที่",
 };
 
 export default function RootLayout({
@@ -13,11 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="th" className="dark">
       <body className="bg-[#08090d] text-zinc-100 min-h-screen relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-white">
         <div className="relative z-10 flex flex-col min-h-screen">
           <a href="#main-content" className="skip-link">
-            Skip to content
+            ข้ามไปเนื้อหา
           </a>
           {children}
 
@@ -28,9 +27,9 @@ export default function RootLayout({
                   Monolith Hub
                 </span>
                 <span>•</span>
-                <span>All your spaces, together.</span>
+                <span>ทุกบริการ ในพื้นที่เดียว</span>
               </div>
-              <p>One account. Endless possibilities.</p>
+              <p>เชื่อมทุกบริการด้วยบัญชีเดียว</p>
             </div>
           </footer>
         </div>
