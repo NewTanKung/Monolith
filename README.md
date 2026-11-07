@@ -1,6 +1,6 @@
 # Monolith Hub
 
-A shared workspace for lifestyle, work, and gaming applications. The monorepo contains a Next.js Hub, the Cyber Arena demonstration app, and a server-side SSO SDK.
+A shared workspace for lifestyle, work, and gaming applications. The monorepo contains the Next.js Monolith Hub and a server-side SSO SDK.
 
 ## Requirements
 
@@ -21,13 +21,13 @@ npm run db:seed
 npm run dev
 ```
 
-Open the Hub at http://localhost:3000 and Cyber Arena at http://localhost:3001.
+Open the Hub at http://localhost:3000.
 
-`setup` generates random JWT and service credentials and writes three ignored files: root `.env`, `apps/hub/.env.local`, and `apps/demo-sub-app/.env.local`. It preserves existing environment files. If files already exist, configure them using the adjacent `.env.example` templates.
+`setup` generates random JWT and service credentials and writes root `.env` and `apps/hub/.env.local`. It preserves existing environment files. If files already exist, configure them using the adjacent `.env.example` templates.
 
-Prisma commands read the root `.env`. Each Next.js app reads its own `.env.local`. Keep the database URL and shared signing key consistent across the appropriate files.
+Prisma commands read the root `.env`. Next.js reads `apps/hub/.env.local`. Keep the database URL and shared signing key consistent across the appropriate files.
 
-The seed command adds example registry entries with upserts. It never deletes existing records, resets passwords, or creates accounts. Existing entries retain their configured URLs and permissions. The example apps other than Cyber Arena are registration placeholders, not implemented business applications.
+The seed command adds example registry entries with upserts. It never deletes existing records, resets passwords, or creates accounts. Existing entries retain their configured URLs and permissions.
 
 ## Create the administrator
 
@@ -48,28 +48,27 @@ POSIX shell:
 ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='<unique password>' npm run admin:create
 ```
 
-The command refuses to overwrite or promote an existing account. No demo administrator or shared default password is installed.
+The command refuses to overwrite or promote an existing account. An administrator account is provisioned explicitly.
 
 ## Commands
 
-| Command                                            | Purpose                                                         |
-| -------------------------------------------------- | --------------------------------------------------------------- |
-| `npm run dev`                                      | Start both apps                                                 |
-| `npm run dev:hub` / `dev:demo`                     | Start one app                                                   |
-| `npm run build`                                    | Build SDK and both production apps                              |
-| `npm run start --workspace=@monolith/hub`          | Start production Hub                                            |
-| `npm run start --workspace=@monolith/demo-sub-app` | Start production Arena                                          |
-| `npm run lint`                                     | ESLint                                                          |
-| `npm run typecheck`                                | Generate Prisma client and check every workspace                |
-| `npm test`                                         | Authentication, validation, request-policy, and singleton tests |
-| `npm run check`                                    | Lint, types, unit tests, and production builds                  |
-| `npm run test:e2e`                                 | Desktop and mobile browser/integration tests                    |
-| `npm run db:migrate`                               | Apply committed SQL migrations                                  |
-| `npm run db:push`                                  | Synchronize schema during disposable local development          |
-| `npm run db:seed`                                  | Add missing example registry records                            |
-| `npm run admin:create`                             | Provision an administrator                                      |
+| Command                                   | Purpose                                                         |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `npm run dev`                             | Start the Hub in development mode                               |
+| `npm run dev:hub`                         | Start the Hub development server                                |
+| `npm run build`                           | Build SDK and production Hub                                    |
+| `npm run start --workspace=@monolith/hub` | Start production Hub                                            |
+| `npm run lint`                            | ESLint                                                          |
+| `npm run typecheck`                       | Generate Prisma client and check workspaces                     |
+| `npm test`                                | Authentication, validation, request-policy, and singleton tests |
+| `npm run check`                           | Lint, types, unit tests, and production builds                  |
+| `npm run test:e2e`                        | Desktop and mobile browser/integration tests                    |
+| `npm run db:migrate`                      | Apply committed SQL migrations                                  |
+| `npm run db:push`                         | Synchronize schema during disposable local development          |
+| `npm run db:seed`                         | Add missing example registry records                            |
+| `npm run admin:create`                    | Provision an administrator                                      |
 
-For browser tests, prepare the local database and build both apps first, then run:
+For browser tests, prepare the local database and build the app first, then run:
 
 ```sh
 npx playwright install chromium
@@ -82,7 +81,6 @@ The suite starts production servers automatically. To use an installed Chrome/Ed
 
 ```text
 apps/hub                 Portal, account APIs, app registry, notifications
-apps/demo-sub-app        Cyber Arena and server-to-server notification example
 packages/auth-client     JWT signing/verification, roles, cookie parsing
 scripts                  Local setup and administrator provisioning
 tests                    Unit/security tests and browser integration tests
@@ -91,7 +89,7 @@ tests                    Unit/security tests and browser integration tests
 
 - Guests see Guest applications. Members see Guest and Member applications. Administrators see all permitted applications.
 - All Hub launchers route through `/apps/:slug/launch`. The server rechecks current role, disabled status, maintenance status, and the destination URL.
-- Maintenance redirects to the app status page. It controls launching from the Hub; a separate service must enforce its own authorization and maintenance policy at its own endpoints.
+- Maintenance redirects to the app status page. It controls launching from the Hub; separate services must enforce their own authorization and maintenance policy at its own endpoints.
 - Favorites have a single shared source of state. Failed saves remain visible as errors rather than appearing saved.
 - Search supports Ctrl/Cmd+K, arrow keys, Enter, Escape, focus containment, and category selection.
 - Notifications refresh when opened and every 30 seconds while the document is visible.
@@ -100,9 +98,9 @@ tests                    Unit/security tests and browser integration tests
 
 Set `MONOLITH_JWT_SECRET` to at least 32 random bytes on every trusted server. There is no fallback key. Set `SESSION_COOKIE_DOMAIN=.example.com` on the Hub to share the HttpOnly cookie with trusted subdomains. Leave it blank for localhost.
 
-Production cookies use Secure, HttpOnly, SameSite=Lax, and a seven-day lifetime. Tokens require the expected algorithm, issuer, audience, subject, role, issue time, and expiry. Existing tokens issued before this rework are invalid; users must sign in again.
+Production cookies use Secure, HttpOnly, SameSite=Lax, and a seven-day lifetime. Tokens require the expected algorithm, issuer, audience, subject, role, issue time, and expiry.
 
-Hub requests resolve the token subject against the database, so deleted users and updated roles take effect immediately. The Demo also asks the Hub for the current profile. Offline SDK consumers validate a signed snapshot until its expiry and should perform an authoritative profile check when immediate revocation is required.
+Hub requests resolve the token subject against the database, so deleted users and updated roles take effect immediately. Offline SDK consumers validate a signed snapshot until its expiry and should perform an authoritative profile check when immediate revocation is required.
 
 All servers holding the shared HMAC key are trusted to mint sessions. Keep this SDK and the key on trusted servers; never expose the key through `NEXT_PUBLIC_*` variables, browser bundles, or untrusted sub-apps. Use an asymmetric identity provider if sub-app servers must not share session-signing authority.
 
@@ -124,10 +122,10 @@ The SDK exports compiled JavaScript and TypeScript declarations. Build it with `
 Set a separate random service token for each trusted application in the Hub environment:
 
 ```dotenv
-MONOLITH_SERVICE_TOKENS='{"Cyber Arena":"<random credential of at least 32 bytes>"}'
+MONOLITH_SERVICE_TOKENS='{"External App":"<random credential of at least 32 bytes>"}'
 ```
 
-Set the matching `MONOLITH_SERVICE_TOKEN` in the Arena server environment. Browser code calls its own `/api/victory` endpoint. The Arena verifies the session, derives the recipient from that session, and forwards a server-authenticated request to the Hub. Service credentials never reach the browser.
+External servers send authenticated requests to the Hub using Bearer tokens:
 
 ```ts
 await fetch(new URL("/api/notifications", process.env.HUB_URL), {
@@ -149,12 +147,12 @@ Service identity comes from the configured credential. User-authenticated reques
 
 ## Cloudflare Workers
 
-For Cloudflare, follow [docs/cloudflare.md](docs/cloudflare.md). Hub and Arena have separate OpenNext/Wrangler configurations, explicit build/deploy commands, a Hub service binding, and Workers-compatible PostgreSQL access. The root Wrangler command explicitly targets Hub.
+For Cloudflare, follow [docs/cloudflare.md](docs/cloudflare.md). The Hub has OpenNext/Wrangler configurations, explicit build/deploy commands, and Workers-compatible PostgreSQL access.
 
 ## Deployment
 
 1. Create a PostgreSQL database and set production environment variables on each server.
-2. Set `HUB_URL` and `DEMO_URL` to the externally visible HTTPS origins. Configure the cookie domain for your trusted subdomains.
+2. Set `HUB_URL` to the externally visible HTTPS origin. Configure the cookie domain for your trusted subdomains.
 3. Generate fresh signing/service credentials. Provision the administrator and update example registry destinations for your environment.
 4. Run `npm ci`, `npm run db:migrate`, and `npm run build`.
 5. Start each production workspace behind your HTTPS reverse proxy.

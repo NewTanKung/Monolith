@@ -13,10 +13,10 @@ async function main() {
       slug: "cyber-arena",
       name: "Cyber Arena",
       description:
-        "Live tournament battles, competitive matchmaking, and game replays (Demo Sub-App)",
+        "Live tournament battles, competitive matchmaking, and game replays",
       category: AppCategory.GAME,
       status: AppStatus.ONLINE,
-      url: "http://localhost:3001",
+      url: "https://arena.yourdomain.com",
       icon: "Gamepad2",
       color: "from-cyan-500 to-blue-600",
       minRole: Role.GUEST,

@@ -3,7 +3,6 @@ import { createDatabaseClient } from "../../apps/hub/src/lib/database-client";
 import bcrypt from "bcryptjs";
 const prisma = createDatabaseClient();
 const hubBase = process.env.E2E_HUB_URL || "http://localhost:3000";
-const demoBase = process.env.E2E_DEMO_URL || "http://localhost:3001";
 const run = "e2e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
 const email = run + "@example.test";
 const adminEmail = "admin-" + email;
@@ -200,7 +199,7 @@ test("admin editing preserves the intended access settings", async ({
       .minRole,
   ).toBe("MEMBER");
 });
-test("member cannot target another account and Demo delivers a server-authenticated event", async ({
+test("member cannot target another account and service delivers an authenticated event", async ({
   page,
 }) => {
   await login(page);
@@ -218,18 +217,22 @@ test("member cannot target another account and Demo delivers a server-authentica
       })
     ).status(),
   ).toBe(403);
-  await page.goto(demoBase);
-  await expect(
-    page.getByText("Connected to Monolith", { exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Simulate victory", exact: true })
-    .click();
-  await expect(page.getByRole("status")).toContainText("Delivered");
+  const serviceResponse = await page.request.post("/api/notifications", {
+    headers: {
+      Authorization: "Bearer test-service-token",
+    },
+    data: {
+      userId: memberId,
+      title: "Authenticated Event Delivered",
+      message: "External system completed event",
+      sourceApp: "External System",
+    },
+  });
+  expect(serviceResponse.status()).toBe(200);
   await page.goto(hubBase);
   await page.locator('summary[aria-label^="Notifications"]').click();
   await expect(
-    page.getByRole("heading", { name: "Victory in Cyber Arena", exact: true }),
+    page.getByRole("heading", { name: "Authenticated Event Delivered", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Mark read", exact: true })
