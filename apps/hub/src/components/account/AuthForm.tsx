@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Layers } from "lucide-react";
+import { MonolithMark } from "../common/MonolithMark";
 import { ApiError, requestJson } from "@/lib/client-api";
 type Mode = "login" | "verify" | "reset" | "forgot";
 export function AuthForm({
@@ -110,9 +110,9 @@ export function AuthForm({
       <section className="account-panel liquid-glass">
         <Link
           href="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-teal-100"
+          className="brand-link auth-brand-arrival mb-6 inline-flex items-center gap-2 text-sm text-teal-100"
         >
-          <Layers size={22} /> Monolith
+          <MonolithMark className="h-6 w-8" /> Monolith
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="mb-6 mt-3 text-sm leading-relaxed text-zinc-300">

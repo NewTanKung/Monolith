@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Avatar } from "../common/Avatar";
-import { Search, ShieldAlert, LogOut, Layers } from "lucide-react";
+import { MonolithMark } from "../common/MonolithMark";
+import { Search, ShieldAlert, LogOut } from "lucide-react";
 import { WaffleMenu } from "./WaffleMenu";
 import { NotificationDropdown, NotificationItem } from "./NotificationDropdown";
 import { CommandPalette } from "../search/CommandPalette";
@@ -91,11 +92,9 @@ export function Navbar({
           <Link
             href="/"
             aria-label="หน้าแรก Monolith"
-            className="flex items-center gap-3 group shrink-0"
+            className="brand-link flex items-center gap-3 shrink-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-liquid-glow-indigo group-hover:scale-105 transition-transform">
-              <Layers className="w-5 h-5 text-white" />
-            </div>
+            <MonolithMark className="brand-mark" />
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold tracking-tight text-white text-base">

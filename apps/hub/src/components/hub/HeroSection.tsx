@@ -1,4 +1,5 @@
-import { ArrowRight, Layers, Search, X } from "lucide-react";
+import { ArrowRight, Search, X } from "lucide-react";
+import { MonolithMark } from "../common/MonolithMark";
 import { ShineBorder } from "../magicui/ShineBorder";
 export function HeroSection({
   userName,
@@ -15,17 +16,19 @@ export function HeroSection({
 }) {
   return (
     <section className="launcher-hero" aria-labelledby="launcher-title">
-      <p className="launcher-eyebrow">ทุกบริการ เชื่อมถึงกัน</p>
-      <h1 id="launcher-title" className="launcher-wordmark">
-        <Layers aria-hidden="true" />
-        Monolith<span>.</span>
+      <p className="launcher-eyebrow launcher-arrival">
+        ทุกบริการ เชื่อมถึงกัน
+      </p>
+      <h1 id="launcher-title" className="launcher-wordmark launcher-arrival">
+        <MonolithMark />
+        Monolith
       </h1>
-      <p className="launcher-greeting">
+      <p className="launcher-greeting launcher-arrival">
         {userName
           ? `ยินดีต้อนรับ ${userName}`
           : "ค้นหาง่าย เปิดใช้ไว ด้วยบัญชีเดียว"}
       </p>
-      <div className="launcher-search liquid-glass">
+      <div className="launcher-search liquid-glass launcher-arrival">
         <ShineBorder
           shineColor={["#77dcd3", "#b3b8ff", "#e4ecff"]}
           duration={16}
@@ -61,7 +64,7 @@ export function HeroSection({
           </span>
         )}
       </div>
-      <div className="launcher-context">
+      <div className="launcher-context launcher-arrival">
         <span className="availability-dot" />
         <span>
           {onlineApps} จาก {totalApps} บริการเปิดให้ใช้
