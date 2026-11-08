@@ -142,6 +142,12 @@
   padding-top: 22px;
   padding-bottom: 16px;
 }
+.brand-mark {
+  width: 36px;
+  height: 27px;
+  flex-shrink: 0;
+  transition: transform 160ms var(--ease-out);
+}
 .launcher-hero {
   width: min(100% - 40px, 640px);
   margin: clamp(48px, 10vh, 110px) auto 0;
@@ -161,19 +167,15 @@
   margin: 16px 0 12px;
   font-size: clamp(40px, 5vw, 58px);
   line-height: 1.1;
-  font-weight: 550;
+  font-weight: 650;
+  color: #b8f4de;
   letter-spacing: -0.055em;
   text-shadow: 0 2px 24px #b0ffeb15;
 }
-.launcher-wordmark > svg {
-  width: 38px;
-  height: 38px;
-  stroke-width: 1.3;
-  color: #bce7df;
-}
-.launcher-wordmark > span {
-  margin-left: -14px;
-  color: #a4e4d8;
+.launcher-wordmark > img {
+  width: 56px;
+  height: 42px;
+  flex-shrink: 0;
 }
 .launcher-greeting {
   color: #bdc8ce;
@@ -341,7 +343,7 @@
     inset 0 -2px 5px #ffffff06,
     0 6px 16px #0002;
   transition:
-    transform 180ms ease-out,
+    transform 160ms var(--ease-out),
     border-color 180ms;
 }
 .service-icon-color {
@@ -459,6 +461,63 @@
     background-position: 100% 100%;
   }
 }
+
+/* A short arrival on page entry; searching and filtering never replay it. */
+@keyframes launcher-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .launcher-arrival,
+  .auth-brand-arrival {
+    animation: launcher-arrive 280ms var(--ease-out) backwards;
+  }
+  .launcher-wordmark {
+    animation-delay: 40ms;
+  }
+  .launcher-greeting {
+    animation-delay: 80ms;
+  }
+  .launcher-search {
+    animation-delay: 120ms;
+  }
+  .launcher-context {
+    animation-delay: 160ms;
+  }
+  .launcher-services {
+    animation-delay: 200ms;
+  }
+  /* Keyboard focus takes precedence over decorative entry motion. */
+  .launcher-arrival:focus-within,
+  .auth-brand-arrival:focus-visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .primary-button,
+  .secondary-button {
+    transition:
+      background 150ms,
+      transform 160ms var(--ease-out);
+  }
+  .primary-button:active:not(:disabled),
+  .secondary-button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .service-link:active .service-icon {
+    transform: scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .brand-link:hover .brand-mark {
+    transform: translateY(-1px);
+  }
+}
 @media (hover: hover) and (pointer: fine) {
   .service-link:hover {
     background: #ffffff06;
@@ -498,8 +557,9 @@
   .launcher-wordmark {
     font-size: 42px;
   }
-  .launcher-wordmark > svg {
-    width: 30px;
+  .launcher-wordmark > img {
+    width: 42px;
+    height: 32px;
   }
   .launcher-search {
     height: 56px;
@@ -555,6 +615,7 @@
 }
 
 :root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --background: #08090d;
   --foreground: #f3f4f6;
 }
@@ -722,7 +783,8 @@ summary::-webkit-details-marker {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .liquid-card:hover {
+  .liquid-card:hover,
+  .service-link:hover .service-icon {
     transform: none;
   }
 }
