@@ -38,6 +38,37 @@ const server = http.createServer((req, res) => {
   );
   req.pipe(upstream);
 });
+// Next dev uses WebSockets for HMR; dropping upgrades triggers repeated page reloads.
+server.on("upgrade", (req, socket, head) => {
+  let url;
+  try {
+    url = new URL(req.url, "http://" + req.headers.host);
+  } catch {
+    socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+    return;
+  }
+  if (
+    !["hub.monolith.test", "service.monolith.test"].includes(url.hostname) ||
+    !["http:", "ws:"].includes(url.protocol)
+  ) {
+    socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
+    return;
+  }
+  const upstream = net.connect(Number(url.port) || 80, "127.0.0.1", () => {
+    const headers = [];
+    for (let index = 0; index < req.rawHeaders.length; index += 2)
+      headers.push(req.rawHeaders[index] + ": " + req.rawHeaders[index + 1]);
+    upstream.write(
+      `${req.method} ${url.pathname + url.search} HTTP/1.1\r\n${headers.join("\r\n")}\r\n\r\n`,
+    );
+    if (head.length) upstream.write(head);
+    socket.pipe(upstream);
+    upstream.pipe(socket);
+  });
+  upstream.on("error", () => socket.destroy());
+  socket.on("error", () => upstream.destroy());
+  socket.on("close", () => upstream.destroy());
+});
 server.on("connect", (req, socket, head) => {
   let url;
   try {

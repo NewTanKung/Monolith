@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["hub.monolith.test"],
   poweredByHeader: false,
   serverExternalPackages: [
     "@prisma/client",

@@ -40,6 +40,7 @@ jobs:
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run test:e2e:dev
       - run: npm run cf:build
       - run: npm run cf:check
       - run: npm run test:e2e:workers

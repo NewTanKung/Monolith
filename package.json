@@ -21,6 +21,7 @@
     "lint": "eslint .",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
+    "test:e2e:dev": "playwright test --config=playwright.dev.config.ts",
     "db:push": "node --env-file=.env node_modules/prisma/build/index.js db push --schema=apps/hub/prisma/schema.prisma",
     "db:migrate": "node --env-file=.env node_modules/prisma/build/index.js migrate deploy --schema=apps/hub/prisma/schema.prisma",
     "db:seed": "npm run generate && node --env-file=.env --import tsx apps/hub/prisma/seed.ts",
