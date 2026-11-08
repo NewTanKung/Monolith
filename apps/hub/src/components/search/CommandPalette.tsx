@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { IconRenderer } from "../common/IconRenderer";
+import { categoryLabels } from "@/lib/display";
 interface App {
   id: string;
   name: string;
@@ -49,10 +50,10 @@ export function CommandPalette({
         if (e.target === dialog.current) onClose();
       }}
       aria-label="ค้นหาแอป"
-      className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-white/15 bg-[#111522] p-0 text-white shadow-2xl backdrop:bg-black/75"
+      className="workspace-dialog is-wide"
     >
-      <div className="flex items-center gap-3 border-b border-white/10 p-4">
-        <Search className="h-5 w-5 text-indigo-300" />
+      <div className="dialog-header">
+        <Search className="h-5 w-5 text-accent" aria-hidden="true" />
         <input
           autoFocus
           aria-label="ค้นหาแอป"
@@ -86,18 +87,18 @@ export function CommandPalette({
             }
           }}
           placeholder="ค้นหาบริการ…"
-          className="min-w-0 flex-1 bg-transparent text-base outline-none"
+          className="admin-input min-w-0 flex-1"
         />
         <button
           aria-label="ปิดการค้นหา"
           onClick={onClose}
-          className="rounded-lg p-2 text-zinc-400"
+          className="icon-button"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
       {onSelectCategory && (
-        <div className="flex gap-2 border-b border-white/10 p-3">
+        <div className="flex flex-wrap gap-2 px-5 pt-3">
           {["GAME", "WORK", "LIFESTYLE"].map((c) => (
             <button
               key={c}
@@ -105,9 +106,9 @@ export function CommandPalette({
                 onSelectCategory(c);
                 onClose();
               }}
-              className="rounded-lg bg-white/5 px-3 py-2 text-xs text-zinc-300"
+              className="category-pill"
             >
-              {c}
+              {categoryLabels[c]}
             </button>
           ))}
         </div>
@@ -115,11 +116,12 @@ export function CommandPalette({
       <div
         id="app-results"
         role="listbox"
-        aria-label="บริการs"
+        aria-label="บริการ"
         className="max-h-[55dvh] overflow-y-auto p-2"
       >
         {results.map((app, i) => (
-          <button
+          <a
+            href={app.url}
             key={app.id}
             id={"result-" + app.id}
             role="option"
@@ -127,11 +129,10 @@ export function CommandPalette({
             onMouseMove={() => setActive(i)}
             onClick={() => {
               onClose();
-              window.location.assign(app.url);
             }}
             className={
               "flex w-full items-center gap-3 rounded-xl p-3 text-left " +
-              (active === i ? "bg-white/10" : "")
+              (active === i ? "bg-surface" : "")
             }
           >
             <span className={"rounded-xl bg-gradient-to-br p-2 " + app.color}>
@@ -139,21 +140,21 @@ export function CommandPalette({
             </span>
             <span className="min-w-0">
               <span className="block font-medium break-words">{app.name}</span>
-              <span className="block truncate text-xs text-zinc-400">
+              <span className="block truncate text-xs text-muted">
                 {app.status === "MAINTENANCE"
                   ? "กำลังปรับปรุง — ดูรายละเอียด"
                   : app.description}
               </span>
             </span>
-          </button>
+          </a>
         ))}
         {!results.length && (
-          <p role="status" className="p-10 text-center text-sm text-zinc-400">
+          <p role="status" className="p-10 text-center text-sm text-muted">
             ไม่พบบริการที่ตรงกับคำค้นหา
           </p>
         )}
       </div>
-      <p className="border-t border-white/10 px-4 py-3 text-xs text-zinc-500">
+      <p className="border-t border-line px-4 py-3 text-xs text-muted">
         ↑ ↓ เลือก · Enter เปิด · Esc ปิด
       </p>
     </dialog>

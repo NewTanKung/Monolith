@@ -23,11 +23,6 @@ export function HubDashboard({
   const [query, setQuery] = useState("");
   return (
     <main id="main-content" className="launcher-page">
-      <div className="launcher-backdrop" aria-hidden="true">
-        <div className="glass-orbit glass-orbit-one" />
-        <div className="glass-orbit glass-orbit-two" />
-        <div className="launcher-grain" />
-      </div>
       <Navbar
         unreadCount={unreadCount}
         nextCursor={nextCursor}
@@ -47,6 +42,7 @@ export function HubDashboard({
         }
       />
       <AppGrid
+        onCategoryChange={setCategory}
         query={query}
         onClearSearch={() => setQuery("")}
         initialApps={apps}

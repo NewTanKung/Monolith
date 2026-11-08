@@ -27,19 +27,19 @@ export function CategoryTabs({
       id: "WORK",
       label: "งานและเครื่องมือ",
       icon: Briefcase,
-      color: "text-indigo-400",
+      color: "text-accent",
     },
     {
       id: "LIFESTYLE",
       label: "ไลฟ์สไตล์",
       icon: HeartPulse,
-      color: "text-rose-400",
+      color: "text-danger",
     },
     {
       id: "FAVORITES",
       label: "รายการโปรด",
       icon: Star,
-      color: "text-amber-400",
+      color: "text-warning",
       count: favoritesCount,
     },
   ];
@@ -65,7 +65,7 @@ export function CategoryTabs({
             <Icon className="h-3.5 w-3.5" />
             <span>{tab.label}</span>
             {tab.count !== undefined && tab.count > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-400/20 text-warning text-xs font-bold">
                 {tab.count}
               </span>
             )}

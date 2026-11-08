@@ -1,0 +1,2 @@
+// Keep this as a literal: Workers bundling can add helpers to functions serialized with toString().
+export const themeBootstrap = `(function(){var t="system";try{t=localStorage.getItem("monolith-theme")||"system";if(t!=="system"&&t!=="light"&&t!=="dark"){t="system";localStorage.removeItem("monolith-theme");}}catch(e){}var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var h=document.documentElement;h.classList.toggle("dark",d);h.classList.toggle("light",!d);h.style.colorScheme=d?"dark":"light";})();`;

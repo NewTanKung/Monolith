@@ -9,6 +9,7 @@ export function AppGrid({
   isAdmin = false,
   query = "",
   onClearSearch,
+  onCategoryChange,
 }: {
   initialApps: AppItemData[];
   selectedCategory?: string;
@@ -16,6 +17,7 @@ export function AppGrid({
   isAdmin?: boolean;
   query?: string;
   onClearSearch?: () => void;
+  onCategoryChange?: (category: string) => void;
 }) {
   const [apps, setApps] = useState(initialApps);
   const [activeCategory, setActiveCategory] = useState(selectedCategory);
@@ -82,13 +84,16 @@ export function AppGrid({
     <section className="launcher-services launcher-arrival" aria-label="บริการ">
       <CategoryTabs
         currentCategory={activeCategory}
-        onSelectCategory={setActiveCategory}
+        onSelectCategory={(value) => {
+          setActiveCategory(value);
+          onCategoryChange?.(value);
+        }}
         favoritesCount={favorites.length}
       />
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200"
+          className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-danger"
         >
           {error}
         </p>
@@ -108,24 +113,36 @@ export function AppGrid({
       {filtered.length ? (
         cards(filtered)
       ) : (
-        <div className="services-empty liquid-glass">
+        <div className="services-empty">
+          <h3>
+            {query.trim()
+              ? "ไม่พบผลการค้นหา"
+              : activeCategory === "FAVORITES"
+                ? "เก็บบริการที่ใช้บ่อยไว้ที่นี่"
+                : "พื้นที่บริการของคุณ"}
+          </h3>
           <p>
             {query.trim()
               ? `ไม่พบบริการที่ตรงกับ “${query.trim()}”`
               : activeCategory === "FAVORITES"
                 ? "ยังไม่มีรายการโปรด กดดาวบนบริการเพื่อบันทึกไว้ที่นี่"
-                : "ยังไม่มีบริการในหมวดนี้"}
+                : !apps.length
+                  ? "บริการที่เปิดให้บัญชีของคุณใช้งานจะแสดงที่นี่"
+                  : "ยังไม่มีบริการในหมวดนี้"}
           </p>
-          {isAdmin && !query.trim() && (
-            <a href="/admin" className="primary-button mt-4 inline-block">
-              เพิ่มบริการแรก
-            </a>
-          )}
+          {isAdmin &&
+            !apps.length &&
+            !query.trim() &&
+            activeCategory !== "FAVORITES" && (
+              <a href="/admin" className="primary-button mt-4 inline-block">
+                เพิ่มบริการ
+              </a>
+            )}
           {query.trim() && (
             <button
               type="button"
               onClick={onClearSearch}
-              className="mt-4 text-sm text-teal-200 underline underline-offset-4"
+              className="mt-4 text-sm text-accent underline underline-offset-4"
             >
               ล้างคำค้นหา
             </button>
