@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MonolithMark } from "../common/MonolithMark";
 import { ApiError, requestJson } from "@/lib/client-api";
@@ -21,12 +21,20 @@ export function AuthForm({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [unverified, setUnverified] = useState(false);
+  const initializedMode = useRef<Mode | null>(null);
   useEffect(() => {
+    // Strict Mode replays effects in development after the fragment has been cleared.
+    if (initializedMode.current === mode) return;
+    initializedMode.current = mode;
     if (mode === "verify" || mode === "reset") {
       setToken(
         new URLSearchParams(window.location.hash.slice(1)).get("token") || "",
       );
-      window.history.replaceState(null, "", window.location.pathname);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search,
+      );
     }
     setLoaded(true);
   }, [mode]);
@@ -235,7 +243,8 @@ export function AuthForm({
           !token &&
           !notice && (
             <p className="form-error">
-              ไม่พบลิงก์ที่ใช้ได้ กรุณาขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ
+              ไม่พบลิงก์ที่ใช้ได้ กรุณาเปิดลิงก์จากอีเมลอีกครั้ง
+              หรือขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ
             </p>
           )}
         {unverified && (
