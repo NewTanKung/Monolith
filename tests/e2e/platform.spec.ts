@@ -434,9 +434,13 @@ test("account screen lists and revokes sessions", async ({ page }) => {
   await page.getByLabel("ชื่อที่แสดง", { exact: true }).fill("สมาชิกทดสอบใหม่");
   await page.getByRole("button", { name: "บันทึกชื่อ", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("บันทึกข้อมูลแล้ว");
-  page.once("dialog", (d) => d.accept());
+  await page.getByRole("link", { name: "อุปกรณ์", exact: true }).click();
   await page
     .getByRole("button", { name: "ออกทุกอุปกรณ์", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "ออกจากระบบทุกอุปกรณ์?", exact: true })
+    .getByRole("button", { name: "ออกจากระบบ", exact: true })
     .click();
   await expect(page).toHaveURL(/\/login$/);
 });
@@ -515,13 +519,17 @@ test("admin creates services, previews icons and manages service tokens", async 
   await page.getByRole("button", { name: "เพิ่มบริการ", exact: true }).click();
   await page.getByLabel("ชื่อบริการ", { exact: true }).fill(run + " created");
   await page.getByLabel("ชื่อใน URL (slug)").fill(run + "-created");
+  await page.getByRole("button", { name: "FileText", exact: true }).click();
+  await page.getByRole("button", { name: "ถัดไป", exact: true }).click();
   await page
     .getByLabel("URL หรือ path ภายใน")
     .fill("http://service.monolith.test:19001/");
-  await page.getByLabel("รูปแบบบริการ").selectOption("SSO");
-  await page.getByRole("button", { name: "FileText", exact: true }).click();
+  await page.getByRole("radio", { name: /เชื่อม SSO/ }).check();
+  await page.getByRole("button", { name: "ถัดไป", exact: true }).click();
   await page.getByRole("button", { name: "บันทึกบริการ", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("บันทึกบริการแล้ว");
+  await expect(
+    page.getByRole("status").filter({ hasText: "บันทึกบริการแล้ว" }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "เชื่อมต่อ " + run + " created", exact: true })
     .click();
@@ -533,8 +541,11 @@ test("admin creates services, previews icons and manages service tokens", async 
     .click();
   await expect(section.getByLabel("Service Token ใหม่")).toContainText("mst_");
   const secret = await section.getByLabel("Service Token ใหม่").innerText();
-  page.once("dialog", (d) => d.accept());
   await section
+    .getByRole("button", { name: "หมุน token ทั้งหมด", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "หมุน token ทั้งหมด?", exact: true })
     .getByRole("button", { name: "หมุน token ทั้งหมด", exact: true })
     .click();
   await expect(section.getByLabel("Service Token ใหม่")).not.toHaveText(secret);
@@ -788,4 +799,185 @@ test("administrator verification CLI sends an ownership link", async () => {
     },
   );
   expect((await emailLink(adminEmail)).includes("#token=")).toBe(true);
+});
+
+test("workspace themes persist and follow system preferences", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  const theme = page.getByRole("combobox", { name: "ธีมสี", exact: true });
+  await theme.selectOption("dark");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.addInitScript(() => {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        (
+          window as Window & { initialWorkspaceTheme?: boolean }
+        ).initialWorkspaceTheme =
+          document.documentElement.classList.contains("dark");
+      },
+      { once: true },
+    );
+  });
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as Window & { initialWorkspaceTheme?: boolean })
+          .initialWorkspaceTheme,
+    ),
+  ).toBe(true);
+  expect(
+    await page.evaluate(() => localStorage.getItem("monolith-theme")),
+  ).toBe("dark");
+  await theme.selectOption("light");
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await theme.selectOption("system");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await page.reload();
+  await expect(page.locator("#launcher-title")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("account sections survive reload and password forms keep independent values", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/account?section=security");
+  await page
+    .getByLabel("รหัสผ่านปัจจุบันสำหรับเปลี่ยนอีเมล", { exact: true })
+    .fill("email-form-value");
+  await expect(
+    page.getByLabel("รหัสผ่านปัจจุบัน", { exact: true }),
+  ).toHaveValue("");
+  await page
+    .getByLabel("รหัสผ่านปัจจุบัน", { exact: true })
+    .fill("password-form-value");
+  await expect(
+    page.getByLabel("รหัสผ่านปัจจุบันสำหรับเปลี่ยนอีเมล", { exact: true }),
+  ).toHaveValue("email-form-value");
+  await page.getByRole("link", { name: "อุปกรณ์", exact: true }).click();
+  await expect(page).toHaveURL(/section=devices$/);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "อุปกรณ์ที่เข้าสู่ระบบ", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "อุปกรณ์", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+});
+
+test("service wizard keeps input after errors and confirms dismissal inside the web", async ({
+  page,
+}) => {
+  await login(page, true);
+  await page.goto("/admin?section=services");
+  await page.getByRole("button", { name: "เพิ่มบริการ", exact: true }).click();
+  const wizard = page.getByRole("dialog", { name: "เพิ่มบริการ", exact: true });
+  await wizard.getByRole("button", { name: "ถัดไป", exact: true }).click();
+  await expect(wizard.getByRole("alert").first()).toBeVisible();
+  const title = "บริการจัดการข้อมูลภาษาไทยที่มีชื่อยาวสำหรับตรวจการแสดงผล";
+  await page.getByLabel("ชื่อบริการ", { exact: true }).fill(title);
+  await page
+    .getByLabel("ชื่อใน URL (slug)", { exact: true })
+    .fill(run + "-wizard");
+  await wizard
+    .getByRole("button", { name: "ปิดหน้าต่าง", exact: true })
+    .click();
+  const confirm = page.getByRole("dialog", {
+    name: "ปิดโดยไม่บันทึก?",
+    exact: true,
+  });
+  await expect(confirm).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(confirm).not.toBeVisible();
+  await expect(page.getByLabel("ชื่อบริการ", { exact: true })).toHaveValue(
+    title,
+  );
+  await wizard.getByRole("button", { name: "ถัดไป", exact: true }).click();
+  await page.getByRole("radio", { name: /เชื่อม SSO/ }).check();
+  await page
+    .getByLabel("URL หรือ path ภายใน", { exact: true })
+    .fill("https://outside.example.net");
+  await wizard.getByRole("button", { name: "ถัดไป", exact: true }).click();
+  await wizard
+    .getByRole("button", { name: "บันทึกบริการ", exact: true })
+    .click();
+  await expect(wizard.getByRole("alert").first()).toBeVisible();
+  await expect(
+    page.getByLabel("URL หรือ path ภายใน", { exact: true }),
+  ).toHaveValue("https://outside.example.net");
+  expect(
+    await db.appItem.findUnique({ where: { slug: run + "-wizard" } }),
+  ).toBeNull();
+  await page
+    .getByLabel("URL หรือ path ภายใน", { exact: true })
+    .fill("http://service.monolith.test:19001/");
+  await wizard.getByRole("button", { name: "ถัดไป", exact: true }).click();
+  await wizard
+    .getByRole("button", { name: "บันทึกบริการ", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "การเชื่อมต่อ " + title }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("MONOLITH_SERVICE_ID=", { exact: false }),
+  ).toBeVisible();
+});
+
+test("empty launcher explains the state and limits setup actions to administrators", async ({
+  page,
+}) => {
+  const rows = await db.appItem.findMany({
+    where: { slug: { startsWith: run } },
+    select: { id: true, status: true },
+  });
+  await db.appItem.updateMany({
+    where: { id: { in: rows.map((row) => row.id) } },
+    data: { status: "DISABLED" },
+  });
+  try {
+    await page.goto("/");
+    await expect(
+      page.getByText("บริการที่เปิดให้บัญชีของคุณใช้งานจะแสดงที่นี่", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "เพิ่มบริการ", exact: true }),
+    ).toHaveCount(0);
+    await login(page, true);
+    await expect(
+      page.getByRole("link", { name: "เพิ่มบริการ", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "รายการโปรด", exact: true }).click();
+    await expect(
+      page.getByText("เก็บบริการที่ใช้บ่อยไว้ที่นี่", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "เพิ่มบริการ", exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    await db.$transaction(
+      rows.map((row) =>
+        db.appItem.update({
+          where: { id: row.id },
+          data: { status: row.status },
+        }),
+      ),
+    );
+  }
 });

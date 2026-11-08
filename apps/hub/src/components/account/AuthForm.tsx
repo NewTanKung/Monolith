@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MonolithMark } from "../common/MonolithMark";
+import { WorkspaceHeader } from "../common/WorkspaceHeader";
 import { ApiError, requestJson } from "@/lib/client-api";
 type Mode = "login" | "verify" | "reset" | "forgot";
 export function AuthForm({
@@ -21,12 +21,21 @@ export function AuthForm({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [unverified, setUnverified] = useState(false);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const initializedMode = useRef<Mode | null>(null);
   useEffect(() => {
+    // Strict Mode replays effects in development after the fragment has been cleared.
+    if (initializedMode.current === mode) return;
+    initializedMode.current = mode;
     if (mode === "verify" || mode === "reset") {
       setToken(
         new URLSearchParams(window.location.hash.slice(1)).get("token") || "",
       );
-      window.history.replaceState(null, "", window.location.pathname);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search,
+      );
     }
     setLoaded(true);
   }, [mode]);
@@ -53,6 +62,7 @@ export function AuthForm({
     setBusy(true);
     setError("");
     setNotice("");
+    setFields({});
     const action =
       mode === "verify"
         ? "verify-email"
@@ -88,6 +98,7 @@ export function AuthForm({
       if (action === "register") setUnverified(true);
       if (mode === "verify" || mode === "reset") setToken("");
     } catch (e) {
+      if (e instanceof ApiError) setFields(e.fields);
       setError(e instanceof Error ? e.message : "ทำรายการไม่สำเร็จ");
       if (e instanceof ApiError && e.code === "EMAIL_UNVERIFIED")
         setUnverified(true);
@@ -106,157 +117,179 @@ export function AuthForm({
             ? "สร้างบัญชี Monolith"
             : "ยินดีต้อนรับกลับมา";
   return (
-    <main id="main-content" className="account-shell">
-      <section className="account-panel liquid-glass">
-        <Link
-          href="/"
-          className="brand-link auth-brand-arrival mb-6 inline-flex items-center gap-2 text-sm text-teal-100"
-        >
-          <MonolithMark className="h-6 w-8" /> Monolith
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mb-6 mt-3 text-sm leading-relaxed text-zinc-300">
-          {mode === "verify"
-            ? "กดยืนยันเพื่อใช้งานบัญชี ลิงก์ใช้ได้ครั้งเดียว"
-            : mode === "reset"
-              ? "ตั้งรหัสใหม่อย่างน้อย 12 ตัวอักษร ระบบจะออกจากบัญชีทุกอุปกรณ์"
-              : mode === "forgot"
-                ? "รับลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล"
-                : "บัญชีเดียวสำหรับทุกบริการของคุณ"}
-        </p>
-        {mode === "login" && (
-          <div className="mb-6 flex gap-2" aria-label="เลือกวิธีเข้าใช้งาน">
-            {[false, true].map((value) => (
-              <button
-                type="button"
-                key={String(value)}
-                aria-pressed={register === value}
-                className={
-                  "category-pill " + (register === value ? "is-active" : "")
-                }
-                onClick={() => {
-                  setRegister(value);
-                  setError("");
-                  setNotice("");
-                  setUnverified(false);
-                }}
-              >
-                {value ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-              </button>
-            ))}
-          </div>
-        )}
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
+    <>
+      <WorkspaceHeader />
+      <main id="main-content" className="account-shell">
+        <section className="account-panel">
+          <p className="account-welcome auth-brand-arrival" translate="no">
+            Monolith Workspace
           </p>
-        )}
-        {notice && (
-          <p role="status" className="form-success">
-            {notice}
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <p className="mb-6 mt-3 text-sm leading-relaxed text-foreground">
+            {mode === "verify"
+              ? "กดยืนยันเพื่อใช้งานบัญชี ลิงก์ใช้ได้ครั้งเดียว"
+              : mode === "reset"
+                ? "ตั้งรหัสใหม่อย่างน้อย 12 ตัวอักษร ระบบจะออกจากบัญชีทุกอุปกรณ์"
+                : mode === "forgot"
+                  ? "รับลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล"
+                  : "บัญชีเดียวสำหรับทุกบริการของคุณ"}
           </p>
-        )}
-        {(mode === "login" || mode === "forgot" || token) && (
-          <form onSubmit={submit} className="space-y-4">
-            <fieldset disabled={busy} className="space-y-4">
-              {register && mode === "login" && (
-                <label className="form-label">
-                  ชื่อที่แสดง
-                  <input
-                    className="admin-input"
-                    autoComplete="name"
-                    required
-                    maxLength={80}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </label>
-              )}
-              {(mode === "login" || mode === "forgot") && (
-                <label className="form-label">
-                  อีเมล
-                  <input
-                    className="admin-input"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    maxLength={254}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </label>
-              )}
-              {(mode === "login" || mode === "reset") && (
-                <label className="form-label">
-                  {mode === "reset" ? "รหัสผ่านใหม่" : "รหัสผ่าน"}
-                  <input
-                    aria-label={mode === "reset" ? "รหัสผ่านใหม่" : "รหัสผ่าน"}
-                    aria-describedby={
-                      register || mode === "reset" ? "password-help" : undefined
-                    }
-                    className="admin-input"
-                    type="password"
-                    autoComplete={
-                      register || mode === "reset"
-                        ? "new-password"
-                        : "current-password"
-                    }
-                    minLength={register || mode === "reset" ? 12 : 1}
-                    maxLength={72}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  {(register || mode === "reset") && (
-                    <span id="password-help" className="text-xs text-zinc-400">
-                      อย่างน้อย 12 ตัวอักษร และไม่เกิน 72 bytes
-                    </span>
-                  )}
-                </label>
-              )}
-              <button className="primary-button w-full" disabled={busy}>
-                {busy
-                  ? "กำลังดำเนินการ…"
-                  : mode === "verify"
-                    ? "ยืนยันอีเมลนี้"
-                    : mode === "reset"
-                      ? "บันทึกรหัสผ่านใหม่"
-                      : mode === "forgot"
-                        ? "ส่งลิงก์กู้รหัสผ่าน"
-                        : register
-                          ? "สมัครและรับอีเมลยืนยัน"
-                          : "เข้าสู่ระบบ"}
-              </button>
-            </fieldset>
-          </form>
-        )}
-        {loaded &&
-          (mode === "verify" || mode === "reset") &&
-          !token &&
-          !notice && (
-            <p className="form-error">
-              ไม่พบลิงก์ที่ใช้ได้ กรุณาขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ
+          {mode === "login" && (
+            <div className="account-mode-tabs" aria-label="เลือกวิธีเข้าใช้งาน">
+              {[false, true].map((value) => (
+                <button
+                  type="button"
+                  key={String(value)}
+                  aria-pressed={register === value}
+                  className={
+                    "category-pill " + (register === value ? "is-active" : "")
+                  }
+                  onClick={() => {
+                    setRegister(value);
+                    setError("");
+                    setNotice("");
+                    setUnverified(false);
+                    setFields({});
+                  }}
+                >
+                  {value ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+                </button>
+              ))}
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
             </p>
           )}
-        {unverified && (
-          <button
-            type="button"
-            disabled={busy || !email}
-            className="secondary-button mt-4 w-full"
-            onClick={resend}
-          >
-            ส่งอีเมลยืนยันอีกครั้ง
-          </button>
-        )}
-        <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm text-teal-200">
-          <Link href="/">กลับหน้า Hub</Link>
-          {mode === "login" ? (
-            <Link href="/forgot-password">ลืมรหัสผ่าน?</Link>
-          ) : (
-            <Link href="/login">เข้าสู่ระบบ / ขออีเมลยืนยันใหม่</Link>
+          {notice && (
+            <p role="status" className="form-success">
+              {notice}
+            </p>
           )}
-        </div>
-      </section>
-    </main>
+          {(mode === "login" || mode === "forgot" || token) && (
+            <form onSubmit={submit} className="space-y-4">
+              <fieldset disabled={busy} className="space-y-4">
+                {register && mode === "login" && (
+                  <label className="form-label">
+                    ชื่อที่แสดง
+                    <input
+                      className="admin-input"
+                      autoComplete="name"
+                      required
+                      maxLength={80}
+                      name="name"
+                      aria-invalid={!!fields.name}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                    {fields.name && (
+                      <span className="field-error">{fields.name}</span>
+                    )}
+                  </label>
+                )}
+                {(mode === "login" || mode === "forgot") && (
+                  <label className="form-label">
+                    อีเมล
+                    <input
+                      className="admin-input"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      maxLength={254}
+                      name="email"
+                      spellCheck={false}
+                      aria-invalid={!!fields.email}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    {fields.email && (
+                      <span className="field-error">{fields.email}</span>
+                    )}
+                  </label>
+                )}
+                {(mode === "login" || mode === "reset") && (
+                  <label className="form-label">
+                    {mode === "reset" ? "รหัสผ่านใหม่" : "รหัสผ่าน"}
+                    <input
+                      aria-label={
+                        mode === "reset" ? "รหัสผ่านใหม่" : "รหัสผ่าน"
+                      }
+                      aria-describedby={
+                        register || mode === "reset"
+                          ? "password-help"
+                          : undefined
+                      }
+                      className="admin-input"
+                      type="password"
+                      name="password"
+                      aria-invalid={!!fields.password}
+                      autoComplete={
+                        register || mode === "reset"
+                          ? "new-password"
+                          : "current-password"
+                      }
+                      minLength={register || mode === "reset" ? 12 : 1}
+                      maxLength={72}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {fields.password && (
+                      <span className="field-error">{fields.password}</span>
+                    )}
+                    {(register || mode === "reset") && (
+                      <span id="password-help" className="text-xs text-muted">
+                        อย่างน้อย 12 ตัวอักษร และไม่เกิน 72 bytes
+                      </span>
+                    )}
+                  </label>
+                )}
+                <button className="primary-button w-full" disabled={busy}>
+                  {busy
+                    ? "กำลังดำเนินการ…"
+                    : mode === "verify"
+                      ? "ยืนยันอีเมลนี้"
+                      : mode === "reset"
+                        ? "บันทึกรหัสผ่านใหม่"
+                        : mode === "forgot"
+                          ? "ส่งลิงก์กู้รหัสผ่าน"
+                          : register
+                            ? "สมัครและรับอีเมลยืนยัน"
+                            : "เข้าสู่ระบบ"}
+                </button>
+              </fieldset>
+            </form>
+          )}
+          {loaded &&
+            (mode === "verify" || mode === "reset") &&
+            !token &&
+            !notice && (
+              <p className="form-error">
+                ไม่พบลิงก์ที่ใช้ได้ กรุณาเปิดลิงก์จากอีเมลอีกครั้ง
+                หรือขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ
+              </p>
+            )}
+          {unverified && (
+            <button
+              type="button"
+              disabled={busy || !email}
+              className="secondary-button mt-4 w-full"
+              onClick={resend}
+            >
+              ส่งอีเมลยืนยันอีกครั้ง
+            </button>
+          )}
+          <div className="account-form-links">
+            <Link href="/">กลับหน้า Hub</Link>
+            {mode === "login" ? (
+              <Link href="/forgot-password">ลืมรหัสผ่าน?</Link>
+            ) : (
+              <Link href="/login">เข้าสู่ระบบ / ขออีเมลยืนยันใหม่</Link>
+            )}
+          </div>
+        </section>
+      </main>
+    </>
   );
 }

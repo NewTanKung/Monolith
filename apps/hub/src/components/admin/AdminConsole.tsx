@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { requestJson } from "@/lib/client-api";
 import { AdminAppManager } from "@/app/admin/AdminAppManager";
 import type { ComponentProps } from "react";
+import Link from "next/link";
+import { LayoutGrid, UsersRound, Settings2 } from "lucide-react";
+import { useSection } from "@/lib/use-section";
+import { roleLabels } from "@/lib/display";
+import { useConfirm } from "../common/Dialog";
 interface UserRow {
   id: string;
   name: string | null;
@@ -30,37 +35,68 @@ interface Entry {
 }
 export function AdminConsole({
   apps,
+  hubUrl,
 }: {
   apps: ComponentProps<typeof AdminAppManager>["initialApps"];
+  hubUrl: string;
 }) {
-  const [tab, setTab] = useState("apps");
+  const [section] = useSection(["services", "members", "settings"], "services");
+  const tab =
+    section === "services"
+      ? "apps"
+      : section === "members"
+        ? "users"
+        : "settings";
   return (
-    <>
-      <nav aria-label="ส่วนผู้ดูแลระบบ" className="mb-7 flex flex-wrap gap-2">
+    <div className="workspace-layout">
+      <nav aria-label="ส่วนผู้ดูแลระบบ" className="workspace-sidebar">
+        <p className="sidebar-label">จัดการ Monolith</p>
         {[
-          ["apps", "บริการ"],
-          ["users", "สมาชิก"],
-          ["settings", "การตั้งค่า"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            className={"category-pill " + (tab === key ? "is-active" : "")}
-            aria-pressed={tab === key}
-            onClick={() => setTab(key)}
-          >
-            {label}
-          </button>
-        ))}
+          ["services", "บริการ", LayoutGrid],
+          ["members", "สมาชิก", UsersRound],
+          ["settings", "การตั้งค่า", Settings2],
+        ].map(([key, label, Glyph]) => {
+          const Icon = Glyph as typeof LayoutGrid;
+          return (
+            <Link
+              key={String(key)}
+              href={"?section=" + key}
+              aria-current={section === key ? "page" : undefined}
+            >
+              <Icon size={18} aria-hidden="true" />
+              {String(label)}
+            </Link>
+          );
+        })}
       </nav>
-      {tab === "apps" ? (
-        <AdminAppManager initialApps={apps} />
-      ) : (
-        <AdminData key={tab} kind={tab} />
-      )}
-    </>
+      <div className="workspace-content">
+        <header className="page-heading">
+          <h1>
+            {tab === "apps"
+              ? "บริการของคุณ"
+              : tab === "users"
+                ? "สมาชิก"
+                : "การตั้งค่า"}
+          </h1>
+          <p>
+            {tab === "apps"
+              ? "รวมทุกบริการไว้ในพื้นที่เดียว จัดการปลายทางและสิทธิ์ได้จากที่นี่"
+              : tab === "users"
+                ? "ดูแลบัญชีและสิทธิ์การเข้าถึงบริการ"
+                : "การรับสมัคร ความพร้อมของระบบ และประวัติการเปลี่ยนแปลง"}
+          </p>
+        </header>
+        {tab === "apps" ? (
+          <AdminAppManager initialApps={apps} hubUrl={hubUrl} />
+        ) : (
+          <AdminData key={tab} kind={tab} />
+        )}
+      </div>
+    </div>
   );
 }
 function AdminData({ kind }: { kind: string }) {
+  const confirm = useConfirm();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -103,7 +139,19 @@ function AdminData({ kind }: { kind: string }) {
     void load();
   }, [page, appliedQuery, auditPage]);
   async function change(resource: string, body: unknown) {
-    if (busy || !confirm("ยืนยันการเปลี่ยนแปลงนี้?")) return;
+    if (
+      busy ||
+      !(await confirm({
+        title:
+          kind === "users" ? "เปลี่ยนแปลงบัญชีสมาชิก?" : "เปลี่ยนการรับสมัคร?",
+        description:
+          kind === "users"
+            ? "การเปลี่ยนสิทธิ์ ระงับบัญชี หรือยกเลิก session มีผลต่อการเข้าใช้บริการทันที"
+            : "การตั้งค่านี้มีผลกับการสมัครสมาชิกใหม่",
+        confirmLabel: "บันทึกการเปลี่ยนแปลง",
+      }))
+    )
+      return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -160,84 +208,110 @@ function AdminData({ kind }: { kind: string }) {
         <p role="status">กำลังโหลดข้อมูล…</p>
       ) : kind === "users" ? (
         <>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted">
             สมาชิก {total} คน · หน้า {page}
           </p>
           {!users.length ? (
             <p className="account-section">ไม่พบสมาชิกที่ตรงกับการค้นหา</p>
           ) : (
-            <div className="space-y-3">
-              {users.map((u) => (
-                <article className="account-section" key={u.id}>
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="break-words font-medium">
-                        {u.name || u.email}
-                      </h3>
-                      <p className="break-all text-sm text-zinc-400">
-                        {u.email}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-400">
-                        {u.status === "ACTIVE" ? "ใช้งานได้" : "ระงับบัญชี"} ·{" "}
-                        {u.emailVerifiedAt
-                          ? "ยืนยันอีเมลแล้ว"
-                          : "รอยืนยันอีเมล"}
-                      </p>
-                    </div>
-                    <form
-                      className="flex items-end gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const role = new FormData(e.currentTarget).get("role");
-                        void change("users", { id: u.id, role });
-                      }}
-                    >
-                      <label className="form-label">
-                        สิทธิ์ของ {u.email}
-                        <select
-                          name="role"
-                          defaultValue={u.role}
-                          className="admin-input"
-                          disabled={busy}
+            <div className="data-table-wrap">
+              <table className="data-table members-table">
+                <caption className="sr-only">สมาชิกและสิทธิ์</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">สมาชิก</th>
+                    <th scope="col">สิทธิ์</th>
+                    <th scope="col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="min-w-0">
+                          <h3 className="break-words font-medium">
+                            {u.name || u.email}
+                          </h3>
+                          <p className="break-all text-sm text-muted">
+                            {u.email}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {u.status === "ACTIVE" ? "ใช้งานได้" : "ระงับบัญชี"}{" "}
+                            ·{" "}
+                            {u.emailVerifiedAt
+                              ? "ยืนยันอีเมลแล้ว"
+                              : "รอยืนยันอีเมล"}
+                          </p>
+                        </div>
+                      </td>
+                      <td>
+                        <form
+                          className="flex items-end gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const role = new FormData(e.currentTarget).get(
+                              "role",
+                            );
+                            void change("users", { id: u.id, role });
+                          }}
                         >
-                          {["GUEST", "MEMBER", "ADMIN"].map((v) => (
-                            <option key={v}>{v}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <button className="secondary-button" disabled={busy}>
-                        บันทึกสิทธิ์
-                      </button>
-                    </form>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      className="secondary-button"
-                      disabled={busy}
-                      onClick={() =>
-                        change("users", {
-                          id: u.id,
-                          status:
-                            u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
-                        })
-                      }
-                    >
-                      {u.status === "ACTIVE"
-                        ? "ระงับบัญชี"
-                        : "เปิดบัญชีอีกครั้ง"}
-                    </button>
-                    <button
-                      className="secondary-button"
-                      disabled={busy}
-                      onClick={() =>
-                        change("users", { id: u.id, revokeSessions: true })
-                      }
-                    >
-                      ออกจากระบบทุกอุปกรณ์
-                    </button>
-                  </div>
-                </article>
-              ))}
+                          <label className="form-label">
+                            สิทธิ์ของ {u.email}
+                            <select
+                              name="role"
+                              defaultValue={u.role}
+                              className="admin-input"
+                              disabled={busy}
+                            >
+                              {["GUEST", "MEMBER", "ADMIN"].map((v) => (
+                                <option key={v} value={v}>
+                                  {roleLabels[v]}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button className="secondary-button" disabled={busy}>
+                            บันทึกสิทธิ์
+                          </button>
+                        </form>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() =>
+                              change("users", {
+                                id: u.id,
+                                status:
+                                  u.status === "ACTIVE"
+                                    ? "SUSPENDED"
+                                    : "ACTIVE",
+                              })
+                            }
+                          >
+                            {u.status === "ACTIVE"
+                              ? "ระงับบัญชี"
+                              : "เปิดบัญชีอีกครั้ง"}
+                          </button>
+                          <button
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() =>
+                              change("users", {
+                                id: u.id,
+                                revokeSessions: true,
+                              })
+                            }
+                          >
+                            ออกจากระบบทุกอุปกรณ์
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
           <div className="flex gap-3">
@@ -262,7 +336,7 @@ function AdminData({ kind }: { kind: string }) {
           <>
             <section className="account-section">
               <h3 className="font-semibold">การสมัครสมาชิก</h3>
-              <p className="my-3 text-sm text-zinc-400">
+              <p className="my-3 text-sm text-muted">
                 {!settings.environmentAllowsRegistration
                   ? "ปิดจากการตั้งค่า server ต้องเปลี่ยน ALLOW_REGISTRATION ก่อน"
                   : settings.registrationEnabled
@@ -295,9 +369,7 @@ function AdminData({ kind }: { kind: string }) {
                     {label}:{" "}
                     <span
                       className={
-                        settings.readiness[k]
-                          ? "text-emerald-200"
-                          : "text-amber-200"
+                        settings.readiness[k] ? "text-success" : "text-warning"
                       }
                     >
                       {settings.readiness[k]
@@ -307,7 +379,7 @@ function AdminData({ kind }: { kind: string }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-zinc-400">
+              <p className="mt-3 text-xs text-muted">
                 ผลนี้ตรวจการตั้งค่า
                 ไม่ได้ยืนยันการส่งถึงกล่องจดหมายหรือสถานะบริการปลายทาง
               </p>
@@ -315,16 +387,16 @@ function AdminData({ kind }: { kind: string }) {
             <section className="account-section">
               <h3 className="font-semibold">ประวัติการจัดการ</h3>
               {!entries.length ? (
-                <p className="mt-3 text-sm text-zinc-400">ยังไม่มีประวัติ</p>
+                <p className="mt-3 text-sm text-muted">ยังไม่มีประวัติ</p>
               ) : (
-                <ul className="mt-3 divide-y divide-white/10">
+                <ul className="mt-3 divide-y divide-line">
                   {entries.map((e) => (
                     <li className="py-3 text-sm" key={e.id}>
                       <p>{auditLabel(e.action)}</p>
-                      <p className="mt-1 break-all text-xs text-zinc-400">
+                      <p className="mt-1 break-all text-xs text-muted">
                         ผู้ดำเนินการ {e.actorId} · รายการ {e.targetId}
                       </p>
-                      <p className="mt-1 text-xs text-zinc-400">
+                      <p className="mt-1 text-xs text-muted">
                         {new Date(e.createdAt).toLocaleString("th-TH", {
                           timeZone: "Asia/Bangkok",
                         })}
@@ -354,7 +426,7 @@ function AdminData({ kind }: { kind: string }) {
         )
       )}
       <button
-        className="text-sm text-teal-200"
+        className="text-sm text-accent"
         disabled={loading || busy}
         onClick={load}
       >

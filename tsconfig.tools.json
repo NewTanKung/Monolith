@@ -13,6 +13,7 @@
     "tests/**/*.ts",
     "scripts/**/*.ts",
     "playwright.config.ts",
+    "playwright.dev.config.ts",
     "playwright.workers.config.ts"
   ]
 }

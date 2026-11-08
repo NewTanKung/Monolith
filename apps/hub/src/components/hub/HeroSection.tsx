@@ -16,9 +16,6 @@ export function HeroSection({
 }) {
   return (
     <section className="launcher-hero" aria-labelledby="launcher-title">
-      <p className="launcher-eyebrow launcher-arrival">
-        ทุกบริการ เชื่อมถึงกัน
-      </p>
       <h1 id="launcher-title" className="launcher-wordmark launcher-arrival">
         <MonolithMark />
         Monolith
@@ -33,11 +30,7 @@ export function HeroSection({
           shineColor={["#77dcd3", "#b3b8ff", "#e4ecff"]}
           duration={16}
         />
-        <Search
-          className="shrink-0 text-white/60"
-          size={20}
-          aria-hidden="true"
-        />
+        <Search className="shrink-0 text-muted" size={20} aria-hidden="true" />
         <label className="sr-only" htmlFor="service-search">
           ค้นหาบริการ
         </label>

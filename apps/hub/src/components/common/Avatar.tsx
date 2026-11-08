@@ -7,10 +7,7 @@ export function Avatar({ name }: { name: string }) {
     .join("")
     .toLocaleUpperCase();
   return (
-    <span
-      aria-hidden="true"
-      className="inline-grid h-8 w-8 shrink-0 place-items-center rounded-full border border-teal-100/20 bg-teal-200/10 text-xs font-semibold text-teal-100"
-    >
+    <span aria-hidden="true" className="avatar">
       {initials || "M"}
     </span>
   );

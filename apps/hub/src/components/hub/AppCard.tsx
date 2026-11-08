@@ -38,9 +38,9 @@ export function AppCard({
         href={app.url}
         className="service-link"
         aria-label={(maintenance ? "ดูสถานะ " : "เปิด ") + app.name}
-        title={app.description + " · " + status}
+        title={app.name + " · " + app.description + " · " + status}
       >
-        <span className="service-icon liquid-glass">
+        <span className="service-icon">
           <span className={"service-icon-color bg-gradient-to-br " + app.color}>
             <IconRenderer name={app.icon} className="h-6 w-6 text-white" />
           </span>
