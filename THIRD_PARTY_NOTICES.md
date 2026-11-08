@@ -1,8 +1,8 @@
 # Third-party notices
 
-IBM Plex Sans Thai Regular, Medium and SemiBold are self-hosted from the
-[Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/ibmplexsansthai).
-Copyright IBM Corp. Licensed under the SIL Open Font License 1.1; the complete
+Sarabun Regular, Medium and SemiBold are self-hosted from the
+[Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/sarabun).
+Licensed under the SIL Open Font License 1.1; the complete copyright notice and
 license is included at `apps/hub/src/styles/fonts/OFL.txt`.
 
 `apps/hub/src/components/magicui/ShineBorder.tsx` and its CSS adapt

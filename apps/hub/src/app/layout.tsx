@@ -4,25 +4,25 @@ import localFont from "next/font/local";
 import { Providers } from "@/components/common/Providers";
 import { themeBootstrap } from "@/lib/theme-bootstrap";
 
-const plex = localFont({
+const sarabun = localFont({
   src: [
     {
-      path: "../styles/fonts/IBMPlexSansThai-Regular.ttf",
+      path: "../styles/fonts/Sarabun-Regular.ttf",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../styles/fonts/IBMPlexSansThai-Medium.ttf",
+      path: "../styles/fonts/Sarabun-Medium.ttf",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../styles/fonts/IBMPlexSansThai-SemiBold.ttf",
+      path: "../styles/fonts/Sarabun-SemiBold.ttf",
       weight: "600",
       style: "normal",
     },
   ],
-  variable: "--font-plex",
+  variable: "--font-sarabun",
   display: "swap",
 });
 
@@ -41,7 +41,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
-      <body className={plex.variable}>
+      <body className={sarabun.variable}>
         <Providers>
           <div className="relative z-10 flex flex-col min-h-screen">
             <a href="#main-content" className="skip-link">

@@ -6,7 +6,7 @@ Monolith is a compact service launcher. The M mark and centered search are its f
 
 The semantic CSS variables in `globals.css` own background, surface, text, muted text, border, accent and status colors. Light uses #F5F7F6 / #FFFFFF / #0D6B5D; dark uses #0B0F13 / #12181F / #B8F4DE. Tailwind semantic colors reference these variables. Service icon palettes are user-selected identity colors and remain independent of the page theme.
 
-IBM Plex Sans Thai 400/500/600 is self-hosted with its OFL license. Main copy is 14–16px and secondary copy is at least 12px. Inputs are 16px and primary touch targets are 44px. Launcher icons are 48px in 8/5/3 columns at desktop/tablet/phone widths.
+Sarabun 400/500/600 is self-hosted with its OFL license. Main copy is 14–16px and secondary copy is at least 12px. Inputs are 16px and primary touch targets are 44px. Launcher icons are 48px in 8/5/3 columns at desktop/tablet/phone widths.
 
 ## Interaction and state
 

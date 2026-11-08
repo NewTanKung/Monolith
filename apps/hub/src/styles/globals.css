@@ -55,7 +55,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-plex), sans-serif;
+  font-family: var(--font-sarabun), sans-serif;
   font-size: 14px;
   line-height: 1.65;
   min-height: 100dvh;
